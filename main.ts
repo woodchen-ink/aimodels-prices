@@ -365,7 +365,7 @@ const html = `<!DOCTYPE html>
                                                 <th>操作</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="priceTable">
+                                        <tbody id="priceTableBody">
                                             <tr>
                                                 <td colspan="11" class="text-center py-5">
                                                     <div class="spinner-border text-primary loading-spinner" role="status">
@@ -547,8 +547,7 @@ const html = `<!DOCTYPE html>
         // 修改加载价格数据函数
         async function loadPrices() {
             console.log('Starting to load prices...');
-            const priceTable = document.getElementById('priceTable');
-            const tbody = priceTable?.querySelector('tbody');
+            const tbody = document.getElementById('priceTableBody');
             if (!tbody) {
                 console.error('Price table body not found');
                 return;
