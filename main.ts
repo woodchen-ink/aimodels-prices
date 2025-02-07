@@ -1,4 +1,6 @@
-import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
+import { serve } from "std/http/server.ts";
+import { crypto } from "std/crypto/mod.ts";
+import { encode as base64Encode, decode as base64Decode } from "std/encoding/base64.ts";
 import { createHmac } from "crypto";
 
 // 类型定义
@@ -113,12 +115,24 @@ async function verifyDiscourseSSO(request: Request): Promise<string | null> {
     return session.value.username;
 }
 
-// 添加登录和登出函数
-function generateSSO(returnUrl: string): string {
-    const payload = Buffer.from(`return_sso_url=${encodeURIComponent(returnUrl)}`).toString('base64');
-    const sig = createHmac('sha256', DISCOURSE_SSO_SECRET)
-        .update(payload)
-        .digest('hex');
+// 修改 generateSSO 函数为异步函数
+async function generateSSO(returnUrl: string): Promise<string> {
+    const payload = base64Encode(`return_sso_url=${encodeURIComponent(returnUrl)}`);
+    const key = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(DISCOURSE_SSO_SECRET),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signature = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        new TextEncoder().encode(payload)
+    );
+    const sig = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
     return `${DISCOURSE_URL}/session/sso_provider?sso=${encodeURIComponent(payload)}&sig=${sig}`;
 }
 
@@ -605,7 +619,7 @@ async function handler(req: Request): Promise<Response> {
             });
         }
 
-        const ssoUrl = generateSSO(returnUrl);
+        const ssoUrl = await generateSSO(returnUrl);
         return new Response(null, {
             status: 302,
             headers: {
@@ -633,16 +647,28 @@ async function handler(req: Request): Promise<Response> {
 
         try {
             // 验证签名
-            const expectedSig = createHmac('sha256', DISCOURSE_SSO_SECRET)
-                .update(sso)
-                .digest('hex');
+            const key = await crypto.subtle.importKey(
+                "raw",
+                new TextEncoder().encode(DISCOURSE_SSO_SECRET),
+                { name: "HMAC", hash: "SHA-256" },
+                false,
+                ["sign"]
+            );
+            const signature = await crypto.subtle.sign(
+                "HMAC",
+                key,
+                new TextEncoder().encode(sso)
+            );
+            const expectedSig = Array.from(new Uint8Array(signature))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
 
             if (sig !== expectedSig) {
                 throw new Error('Invalid signature');
             }
 
             // 解码 payload
-            const payload = Buffer.from(sso, 'base64').toString();
+            const payload = new TextDecoder().decode(base64Decode(sso));
             const payloadParams = new URLSearchParams(payload);
             const username = payloadParams.get('username');
 
