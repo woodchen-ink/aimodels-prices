@@ -545,152 +545,159 @@ const html = `<!DOCTYPE html>
         }
 
         // 修改加载价格数据函数
-        function loadPrices() {
+        async function loadPrices() {
+            console.log('Starting to load prices...');
             const priceTable = document.getElementById('priceTable');
             const tbody = priceTable?.querySelector('tbody');
-            if (!tbody) return;
+            if (!tbody) {
+                console.error('Price table body not found');
+                return;
+            }
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch(API_BASE_URL + '/api/prices', {
-                method: 'GET',
-                mode: 'cors',
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-                .then(response => {
-                    console.log('Response:', response);
-                    if (!response.ok) {
-                        throw new Error('HTTP error! status: ' + response.status);
+            try {
+                console.log('Fetching prices from:', API_BASE_URL + '/api/prices');
+                const response = await fetch(API_BASE_URL + '/api/prices', {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Received data:', data);
-                    tbody.innerHTML = '';
-                    
-                    if (!data || !Array.isArray(data)) {
-                        console.error('Invalid data format:', data);
-                        tbody.innerHTML = '<tr><td colspan="11" class="text-center">数据格式错误</td></tr>';
-                        return;
-                    }
-
-                    if (data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="11" class="text-center">暂无数据</td></tr>';
-                        return;
-                    }
-
-                    console.log('Processing', data.length, 'price records');
-                    data.forEach((price, index) => {
-                        try {
-                            const tr = document.createElement('tr');
-                            const safePrice = {
-                                ...price,
-                                input_ratio: price.input_ratio || 1,
-                                output_ratio: price.output_ratio || 1,
-                                status: price.status || 'pending'
-                            };
-                            
-                            console.log('Processing price record', index + 1, ':', safePrice);
-                            
-                            // 创建单元格
-                            const modelCell = document.createElement('td');
-                            modelCell.textContent = safePrice.model;
-
-                            const billingTypeCell = document.createElement('td');
-                            const billingTypeBadge = document.createElement('span');
-                            billingTypeBadge.className = 'badge badge-' + safePrice.billing_type;
-                            billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
-                            billingTypeCell.appendChild(billingTypeBadge);
-
-                            const vendorCell = document.createElement('td');
-                            if (vendors && vendors[String(safePrice.channel_type)]) {
-                                const vendorData = vendors[String(safePrice.channel_type)];
-                                const vendorIcon = document.createElement('img');
-                                vendorIcon.src = vendorData.icon;
-                                vendorIcon.className = 'vendor-icon';
-                                vendorIcon.alt = vendorData.name;
-                                vendorIcon.onerror = () => { vendorIcon.style.display = 'none'; };
-                                vendorCell.appendChild(vendorIcon);
-                                vendorCell.appendChild(document.createTextNode(vendorData.name));
-                            } else {
-                                vendorCell.textContent = '未知供应商';
-                            }
-
-                            const currencyCell = document.createElement('td');
-                            currencyCell.textContent = safePrice.currency;
-
-                            const inputPriceCell = document.createElement('td');
-                            inputPriceCell.textContent = String(safePrice.input_price);
-
-                            const outputPriceCell = document.createElement('td');
-                            outputPriceCell.textContent = String(safePrice.output_price);
-
-                            const inputRatioCell = document.createElement('td');
-                            inputRatioCell.textContent = safePrice.input_ratio.toFixed(4);
-
-                            const outputRatioCell = document.createElement('td');
-                            outputRatioCell.textContent = safePrice.output_ratio.toFixed(4);
-
-                            const sourceCell = document.createElement('td');
-                            const sourceLink = document.createElement('a');
-                            sourceLink.href = safePrice.price_source;
-                            sourceLink.className = 'source-link';
-                            sourceLink.target = '_blank';
-                            sourceLink.textContent = '查看来源';
-                            sourceCell.appendChild(sourceLink);
-
-                            const statusCell = document.createElement('td');
-                            const statusBadge = document.createElement('span');
-                            statusBadge.className = 'badge badge-' + safePrice.status;
-                            statusBadge.textContent = getStatusText(safePrice.status);
-                            statusCell.appendChild(statusBadge);
-
-                            // 添加所有单元格
-                            tr.appendChild(modelCell);
-                            tr.appendChild(billingTypeCell);
-                            tr.appendChild(vendorCell);
-                            tr.appendChild(currencyCell);
-                            tr.appendChild(inputPriceCell);
-                            tr.appendChild(outputPriceCell);
-                            tr.appendChild(inputRatioCell);
-                            tr.appendChild(outputRatioCell);
-                            tr.appendChild(sourceCell);
-                            tr.appendChild(statusCell);
-
-                            // 只有管理员才添加操作列
-                            if (currentUser === 'wood' && safePrice.status === 'pending') {
-                                const operationCell = document.createElement('td');
-                                
-                                const approveButton = document.createElement('button');
-                                approveButton.className = 'btn btn-success btn-sm me-2';
-                                approveButton.textContent = '通过';
-                                approveButton.onclick = () => reviewPrice(safePrice.id || '', 'approved');
-                                
-                                const rejectButton = document.createElement('button');
-                                rejectButton.className = 'btn btn-danger btn-sm';
-                                rejectButton.textContent = '拒绝';
-                                rejectButton.onclick = () => reviewPrice(safePrice.id || '', 'rejected');
-                                
-                                operationCell.appendChild(approveButton);
-                                operationCell.appendChild(rejectButton);
-                                tr.appendChild(operationCell);
-                            }
-
-                            tbody.appendChild(tr);
-                        } catch (error) {
-                            console.error('Error processing price record', index + 1, ':', error);
-                        }
-                    });
-                    console.log('Finished loading price table');
-                })
-                .catch(error => {
-                    console.error('加载价格数据失败:', error);
-                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</td></tr>';
-                    showToast('加载价格数据失败', 'danger');
                 });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+
+                const data = await response.json();
+                console.log('Received data:', data);
+
+                if (!data || !Array.isArray(data)) {
+                    console.error('Invalid data format:', data);
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">数据格式错误</td></tr>';
+                    return;
+                }
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">暂无数据</td></tr>';
+                    return;
+                }
+
+                console.log('Processing', data.length, 'price records');
+                tbody.innerHTML = '';
+                data.forEach((price, index) => {
+                    try {
+                        const tr = document.createElement('tr');
+                        const safePrice = {
+                            ...price,
+                            input_ratio: price.input_ratio || 1,
+                            output_ratio: price.output_ratio || 1,
+                            status: price.status || 'pending'
+                        };
+                        
+                        console.log('Processing price record', index + 1, ':', safePrice);
+                        
+                        // 创建单元格
+                        const modelCell = document.createElement('td');
+                        modelCell.textContent = safePrice.model;
+
+                        const billingTypeCell = document.createElement('td');
+                        const billingTypeBadge = document.createElement('span');
+                        billingTypeBadge.className = 'badge badge-' + safePrice.billing_type;
+                        billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
+                        billingTypeCell.appendChild(billingTypeBadge);
+
+                        const vendorCell = document.createElement('td');
+                        if (vendors && vendors[String(safePrice.channel_type)]) {
+                            const vendorData = vendors[String(safePrice.channel_type)];
+                            const vendorIcon = document.createElement('img');
+                            vendorIcon.src = vendorData.icon;
+                            vendorIcon.className = 'vendor-icon';
+                            vendorIcon.alt = vendorData.name;
+                            vendorIcon.onerror = () => { vendorIcon.style.display = 'none'; };
+                            vendorCell.appendChild(vendorIcon);
+                            vendorCell.appendChild(document.createTextNode(vendorData.name));
+                        } else {
+                            vendorCell.textContent = '未知供应商';
+                        }
+
+                        const currencyCell = document.createElement('td');
+                        currencyCell.textContent = safePrice.currency;
+
+                        const inputPriceCell = document.createElement('td');
+                        inputPriceCell.textContent = String(safePrice.input_price);
+
+                        const outputPriceCell = document.createElement('td');
+                        outputPriceCell.textContent = String(safePrice.output_price);
+
+                        const inputRatioCell = document.createElement('td');
+                        inputRatioCell.textContent = safePrice.input_ratio.toFixed(4);
+
+                        const outputRatioCell = document.createElement('td');
+                        outputRatioCell.textContent = safePrice.output_ratio.toFixed(4);
+
+                        const sourceCell = document.createElement('td');
+                        const sourceLink = document.createElement('a');
+                        sourceLink.href = safePrice.price_source;
+                        sourceLink.className = 'source-link';
+                        sourceLink.target = '_blank';
+                        sourceLink.textContent = '查看来源';
+                        sourceCell.appendChild(sourceLink);
+
+                        const statusCell = document.createElement('td');
+                        const statusBadge = document.createElement('span');
+                        statusBadge.className = 'badge badge-' + safePrice.status;
+                        statusBadge.textContent = getStatusText(safePrice.status);
+                        statusCell.appendChild(statusBadge);
+
+                        // 添加所有单元格
+                        tr.appendChild(modelCell);
+                        tr.appendChild(billingTypeCell);
+                        tr.appendChild(vendorCell);
+                        tr.appendChild(currencyCell);
+                        tr.appendChild(inputPriceCell);
+                        tr.appendChild(outputPriceCell);
+                        tr.appendChild(inputRatioCell);
+                        tr.appendChild(outputRatioCell);
+                        tr.appendChild(sourceCell);
+                        tr.appendChild(statusCell);
+
+                        // 只有管理员才添加操作列
+                        if (currentUser === 'wood' && safePrice.status === 'pending') {
+                            const operationCell = document.createElement('td');
+                            
+                            const approveButton = document.createElement('button');
+                            approveButton.className = 'btn btn-success btn-sm me-2';
+                            approveButton.textContent = '通过';
+                            approveButton.onclick = () => reviewPrice(safePrice.id || '', 'approved');
+                            
+                            const rejectButton = document.createElement('button');
+                            rejectButton.className = 'btn btn-danger btn-sm';
+                            rejectButton.textContent = '拒绝';
+                            rejectButton.onclick = () => reviewPrice(safePrice.id || '', 'rejected');
+                            
+                            operationCell.appendChild(approveButton);
+                            operationCell.appendChild(rejectButton);
+                            tr.appendChild(operationCell);
+                        }
+
+                        tbody.appendChild(tr);
+                    } catch (error) {
+                        console.error('Error processing price record', index + 1, ':', error);
+                    }
+                });
+                console.log('Finished loading price table');
+            } catch (error) {
+                console.error('加载价格数据失败:', error);
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</td></tr>';
+                showToast('加载价格数据失败: ' + error.message, 'danger');
+            }
         }
 
         // 修改提交新价格函数
@@ -744,18 +751,32 @@ const html = `<!DOCTYPE html>
             }
         }
 
-        // 初始化
+        // 修改初始化函数
         async function init() {
-            console.log('Initializing...');
+            console.log('Initializing application...');
             try {
+                console.log('Loading vendors...');
                 await loadVendors();
-                console.log('Vendors loaded');
+                console.log('Vendors loaded successfully');
+                
+                console.log('Checking login status...');
+                await checkLoginStatus();
+                console.log('Login status checked');
+                
+                console.log('Loading prices...');
                 await loadPrices();
-                console.log('Prices loaded');
+                console.log('Prices loaded successfully');
             } catch (error) {
                 console.error('初始化失败:', error);
+                showToast('初始化失败', 'danger');
             }
         }
+
+        // 确保在页面加载完成后执行初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, starting initialization...');
+            init();
+        });
 
         // 修改 Toast 提示函数
         function showToast(message, type = 'success') {
@@ -815,8 +836,6 @@ const html = `<!DOCTYPE html>
                 showToast('复制失败', 'danger');
             }
         }
-
-        init();
     </script>
 </body>
 </html>`;
