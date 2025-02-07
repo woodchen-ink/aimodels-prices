@@ -52,7 +52,16 @@ const html = `<!DOCTYPE html>
             e.preventDefault();
             const messageDiv = document.getElementById('message');
             const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            
+            // 构建请求数据
+            const data = {};
+            for (const [key, value] of formData.entries()) {
+                if (key === 'channel_type' || key === 'input' || key === 'output') {
+                    data[key] = Number(value);
+                } else {
+                    data[key] = value;
+                }
+            }
             
             try {
                 const response = await fetch('/api/prices', {
@@ -72,6 +81,7 @@ const html = `<!DOCTYPE html>
                     messageDiv.textContent = result.error || '更新失败';
                 }
             } catch (error) {
+                console.error('Error:', error);
                 messageDiv.className = 'message error';
                 messageDiv.textContent = '更新失败: ' + error.message;
             }
@@ -111,10 +121,25 @@ function validateData(data: any): string | null {
 async function handler(req: Request): Promise<Response> {
     const url = new URL(req.url);
     
+    // 添加 CORS 支持
+    const headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    // 处理 OPTIONS 请求
+    if (req.method === "OPTIONS") {
+        return new Response(null, { headers });
+    }
+    
     // 提供静态页面
     if (url.pathname === "/" || url.pathname === "/index.html") {
         return new Response(html, {
-            headers: { "Content-Type": "text/html; charset=utf-8" }
+            headers: { 
+                "Content-Type": "text/html; charset=utf-8",
+                ...headers 
+            }
         });
     }
     
@@ -122,14 +147,30 @@ async function handler(req: Request): Promise<Response> {
     if (url.pathname === "/api/prices") {
         if (req.method === "POST") {
             try {
-                const data = await req.json();
+                let data;
+                const contentType = req.headers.get("content-type") || "";
+                
+                if (contentType.includes("application/json")) {
+                    data = await req.json();
+                } else if (contentType.includes("application/x-www-form-urlencoded")) {
+                    const formData = await req.formData();
+                    data = {};
+                    for (const [key, value] of formData.entries()) {
+                        data[key] = value;
+                    }
+                } else {
+                    throw new Error("不支持的内容类型");
+                }
                 
                 // 验证数据
                 const error = validateData(data);
                 if (error) {
                     return new Response(JSON.stringify({ error }), {
                         status: 400,
-                        headers: { "Content-Type": "application/json" }
+                        headers: { 
+                            "Content-Type": "application/json",
+                            ...headers 
+                        }
                     });
                 }
                 
@@ -152,23 +193,36 @@ async function handler(req: Request): Promise<Response> {
                 await writePrices(prices);
                 
                 return new Response(JSON.stringify({ success: true }), {
-                    headers: { "Content-Type": "application/json" }
+                    headers: { 
+                        "Content-Type": "application/json",
+                        ...headers 
+                    }
                 });
             } catch (error) {
+                console.error("Error:", error);
                 return new Response(JSON.stringify({ error: error.message }), {
                     status: 500,
-                    headers: { "Content-Type": "application/json" }
+                    headers: { 
+                        "Content-Type": "application/json",
+                        ...headers 
+                    }
                 });
             }
         } else if (req.method === "GET") {
             const prices = await readPrices();
             return new Response(JSON.stringify(prices), {
-                headers: { "Content-Type": "application/json" }
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...headers 
+                }
             });
         }
     }
     
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { 
+        status: 404,
+        headers 
+    });
 }
 
 // 启动服务器
