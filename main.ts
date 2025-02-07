@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std/http/server.ts";
+import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 
 // HTML 页面
 const html = `<!DOCTYPE html>
@@ -80,21 +80,18 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// 读取prices.json文件
+// 使用 Deno KV 存储数据
+const kv = await Deno.openKv();
+
+// 读取价格数据
 async function readPrices(): Promise<any[]> {
-    try {
-        const decoder = new TextDecoder("utf-8");
-        const data = await Deno.readFile("prices.json");
-        return JSON.parse(decoder.decode(data));
-    } catch {
-        return [];
-    }
+    const prices = await kv.get(["prices"]);
+    return prices.value || [];
 }
 
-// 写入prices.json文件
+// 写入价格数据
 async function writePrices(prices: any[]): Promise<void> {
-    const encoder = new TextEncoder();
-    await Deno.writeFile("prices.json", encoder.encode(JSON.stringify(prices, null, 2)));
+    await kv.set(["prices"], prices);
 }
 
 // 验证请求数据
