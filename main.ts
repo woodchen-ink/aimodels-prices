@@ -1,100 +1,118 @@
 import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 
+// 在文件开头添加接口定义
+interface Price {
+    model: string;
+    type: string;
+    channel_type: number;
+    input: number;
+    output: number;
+}
+
 // HTML 页面
 const html = `<!DOCTYPE html>
 <html>
 <head>
-    <title>AI Models Price Update</title>
+    <title>AI Models Price API</title>
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #45a049; }
-        .message { margin-top: 10px; padding: 10px; border-radius: 4px; }
-        .error { background: #ffebee; color: #c62828; }
-        .success { background: #e8f5e9; color: #2e7d32; }
-        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f7f9fc;
+            color: #2c3e50;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.2em;
+        }
+        .link-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1a73e8;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .link-title {
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        a {
+            color: #1a73e8;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .description {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>AI Models Price Update</h1>
-        <form id="priceForm">
-            <div class="form-group">
-                <label for="model">Model Name:</label>
-                <input type="text" id="model" name="model" required>
+        <h1>AI Models Price API</h1>
+        
+        <div class="link-card">
+            <div class="link-title">📊 模型价格表格</div>
+            <a href="https://czl-logistics.feishu.cn/base/YFQhbCITwaWZblsessyctQNlnde?from=from_copylink" target="_blank">
+                在飞书多维表格中查看完整价格表
+            </a>
+            <div class="description">
+                查看所有 AI 模型的详细价格信息，包括输入输出价格、通道类型等
             </div>
-            <div class="form-group">
-                <label for="type">Type:</label>
-                <input type="text" id="type" name="type" required>
+        </div>
+
+        <div class="link-card">
+            <div class="link-title">🔄 JSON API 接口</div>
+            <a href="https://woodchen-aimodels-price.deno.dev/api/prices" target="_blank">
+                获取价格数据的 JSON 格式
+            </a>
+            <div class="description">
+                用于程序接入的 JSON 格式数据，支持实时获取最新价格信息
             </div>
-            <div class="form-group">
-                <label for="channel_type">Channel Type:</label>
-                <input type="number" id="channel_type" name="channel_type" min="0" step="1" required>
+        </div>
+
+        <div class="link-card">
+            <div class="link-title">📝 提交/更新价格</div>
+            <a href="https://czl-logistics.feishu.cn/share/base/form/shrcnrFG5qhUStivKiGtevuByyc" target="_blank">
+                提交新的模型价格信息
+            </a>
+            <div class="description">
+                通过飞书表单提交新的模型价格或更新现有模型的价格信息
             </div>
-            <div class="form-group">
-                <label for="input">Input Price:</label>
-                <input type="number" id="input" name="input" min="0" step="0.0001" required>
-            </div>
-            <div class="form-group">
-                <label for="output">Output Price:</label>
-                <input type="number" id="output" name="output" min="0" step="0.0001" required>
-            </div>
-            <button type="submit">Update Price</button>
-            <div id="message"></div>
-            <div id="debug" style="margin-top: 20px;"></div>
-        </form>
+        </div>
+
+        <footer>
+            © ${new Date().getFullYear()} AI Models Price API - Powered by Deno Deploy
+        </footer>
     </div>
-
-    <script>
-        document.getElementById('priceForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const messageDiv = document.getElementById('message');
-            const debugDiv = document.getElementById('debug');
-            
-            try {
-                // 获取表单数据
-                const data = {
-                    model: document.getElementById('model').value.trim(),
-                    type: document.getElementById('type').value.trim(),
-                    channel_type: Number(document.getElementById('channel_type').value),
-                    input: Number(document.getElementById('input').value),
-                    output: Number(document.getElementById('output').value)
-                };
-
-                // 显示发送的数据（调试用）
-                debugDiv.innerHTML = '<strong>发送的数据:</strong><pre>' + JSON.stringify(data, null, 2) + '</pre>';
-                
-                const response = await fetch('/api/prices', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                // 显示服务器响应（调试用）
-                debugDiv.innerHTML += '<strong>服务器响应:</strong><pre>' + JSON.stringify(result, null, 2) + '</pre>';
-                
-                if (response.ok) {
-                    messageDiv.className = 'message success';
-                    messageDiv.textContent = '价格更新成功！';
-                    e.target.reset();
-                    debugDiv.innerHTML = ''; // 清除调试信息
-                } else {
-                    messageDiv.className = 'message error';
-                    messageDiv.textContent = result.error || '更新失败';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                messageDiv.className = 'message error';
-                messageDiv.textContent = '更新失败: ' + error.message;
-            }
-        };
-    </script>
 </body>
 </html>`;
 
@@ -135,60 +153,104 @@ function validateData(data: any): string | null {
     return null;
 }
 
-// 处理请求
+// 修改处理函数
 async function handler(req: Request): Promise<Response> {
     const url = new URL(req.url);
     
-    // 添加 CORS 支持
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // 处理 OPTIONS 请求
     if (req.method === "OPTIONS") {
         return new Response(null, { headers });
     }
     
-    // API 端点
     if (url.pathname === "/api/prices") {
         if (req.method === "POST") {
             try {
-                let data;
+                let rawData;
                 const contentType = req.headers.get("content-type") || "";
                 
+                // 获取原始数据
                 if (contentType.includes("application/json")) {
-                    data = await req.json();
+                    rawData = await req.json();
                 } else if (contentType.includes("application/x-www-form-urlencoded")) {
                     const formData = await req.formData();
-                    data = {};
+                    rawData = {};
                     for (const [key, value] of formData.entries()) {
-                        // 如果值包含逗号，只取第一个值
-                        const actualValue = String(value).split(',')[0];
-                        data[key] = actualValue;
+                        rawData[key] = value;
                     }
                 } else {
                     throw new Error("不支持的内容类型");
                 }
                 
-                console.log("Received raw data:", data); // 调试日志
+                console.log("Received raw data:", rawData);
+
+                // 修改数组声明
+                let dataArray: Price[] = [];
                 
-                // 清理和转换数据
-                const cleanData = {
-                    model: String(data.model).trim(),
-                    type: String(data.type).trim(),
-                    channel_type: Number(String(data.channel_type).split(',')[0]),
-                    input: Number(String(data.input).split(',')[0]),
-                    output: Number(String(data.output).split(',')[0])
-                };
+                // 如果数据中的字段包含逗号，说明是批量数据
+                if (typeof rawData.model === 'string' && rawData.model.includes(',')) {
+                    const models = rawData.model.split(',');
+                    const types = rawData.type.split(',');
+                    const channelTypes = rawData.channel_type.split(',');
+                    const inputs = rawData.input.split(',');
+                    const outputs = rawData.output.split(',');
+                    
+                    // 确保所有数组长度一致
+                    const length = Math.min(
+                        models.length,
+                        types.length,
+                        channelTypes.length,
+                        inputs.length,
+                        outputs.length
+                    );
+                    
+                    // 构建数据数组
+                    for (let i = 0; i < length; i++) {
+                        if (models[i] && types[i] && channelTypes[i] && inputs[i] && outputs[i]) {
+                            dataArray.push({
+                                model: models[i].trim(),
+                                type: types[i].trim(),
+                                channel_type: Number(channelTypes[i]),
+                                input: Number(inputs[i]),
+                                output: Number(outputs[i])
+                            });
+                        }
+                    }
+                } else {
+                    // 单条数据
+                    dataArray.push({
+                        model: String(rawData.model).trim(),
+                        type: String(rawData.type).trim(),
+                        channel_type: Number(rawData.channel_type),
+                        input: Number(rawData.input),
+                        output: Number(rawData.output)
+                    });
+                }
                 
-                console.log("Cleaned data:", cleanData); // 调试日志
+                console.log("Processed data array:", dataArray);
                 
-                // 验证数据
-                const error = validateData(cleanData);
-                if (error) {
-                    return new Response(JSON.stringify({ error }), {
+                // 验证所有数据
+                const errors = [];
+                const validData = [];
+                
+                for (const data of dataArray) {
+                    const error = validateData(data);
+                    if (error) {
+                        errors.push({ data, error });
+                    } else {
+                        validData.push(data);
+                    }
+                }
+                
+                if (errors.length > 0) {
+                    return new Response(JSON.stringify({ 
+                        error: "部分数据验证失败",
+                        details: errors
+                    }), {
                         status: 400,
                         headers: { 
                             "Content-Type": "application/json",
@@ -201,14 +263,15 @@ async function handler(req: Request): Promise<Response> {
                 const prices = await readPrices();
                 
                 // 添加新数据
-                prices.push(cleanData);
+                prices.push(...validData);
                 
                 // 保存数据
                 await writePrices(prices);
                 
                 return new Response(JSON.stringify({ 
                     success: true,
-                    data: cleanData 
+                    processed: validData.length,
+                    data: validData
                 }), {
                     headers: { 
                         "Content-Type": "application/json",
@@ -216,7 +279,7 @@ async function handler(req: Request): Promise<Response> {
                     }
                 });
             } catch (error) {
-                console.error("Processing error:", error); // 调试日志
+                console.error("Processing error:", error);
                 return new Response(JSON.stringify({ 
                     error: error.message,
                     details: "数据处理失败，请检查输入格式"
