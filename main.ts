@@ -459,7 +459,9 @@ const html = `<!DOCTYPE html>
         // 检查登录状态
         async function checkLoginStatus() {
             try {
-                const response = await fetch(\`\${BASE_URL}/api/auth/status\`);
+                const response = await fetch(`${BASE_URL}/api/auth/status`, {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 currentUser = data.user;
                 updateLoginUI();
@@ -475,10 +477,10 @@ const html = `<!DOCTYPE html>
             const submitTab = document.querySelector('a[href="#submit"]');
             
             if (currentUser) {
-                loginStatus.innerHTML = \`
-                    <span class="me-2">欢迎, \${currentUser}</span>
+                loginStatus.innerHTML = `
+                    <span class="me-2">欢迎, ${currentUser}</span>
                     <button onclick="logout()" class="btn btn-outline-danger btn-sm">退出</button>
-                \`;
+                `;
                 submitTab.style.display = 'block';
                 // 重新加载价格数据以更新操作列
                 loadPrices();
@@ -531,8 +533,7 @@ const html = `<!DOCTYPE html>
 
             thead.innerHTML = columns
                 .filter(col => col.always || (currentUser === 'wood'))
-                .map(col => \`<th>\${col.title}</th>\`)
-                .join('');
+                .map(col => `<th>${col.title}</th>`).join('');
         }
 
         // 修改加载价格数据函数
@@ -543,10 +544,12 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch(\`\${BASE_URL}/api/prices\`)
+            fetch(`${BASE_URL}/api/prices`, {
+                credentials: 'include'
+            })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(\`HTTP error! status: \${response.status}\`);
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
@@ -576,7 +579,7 @@ const html = `<!DOCTYPE html>
 
                         const billingTypeCell = document.createElement('td');
                         const billingTypeBadge = document.createElement('span');
-                        billingTypeBadge.className = \`badge badge-\${safePrice.billing_type}\`;
+                        billingTypeBadge.className = `badge badge-${safePrice.billing_type}`;
                         billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
                         billingTypeCell.appendChild(billingTypeBadge);
 
@@ -618,7 +621,7 @@ const html = `<!DOCTYPE html>
 
                         const statusCell = document.createElement('td');
                         const statusBadge = document.createElement('span');
-                        statusBadge.className = \`badge badge-\${safePrice.status}\`;
+                        statusBadge.className = `badge badge-${safePrice.status}`;
                         statusBadge.textContent = getStatusText(safePrice.status);
                         statusCell.appendChild(statusBadge);
 
@@ -658,7 +661,7 @@ const html = `<!DOCTYPE html>
                 })
                 .catch(error => {
                     console.error('加载价格数据失败:', error);
-                    tbody.innerHTML = \`<tr><td colspan="11" class="text-center">加载失败: \${error.message}</td></tr>\`;
+                    tbody.innerHTML = `<tr><td colspan="11" class="text-center">加载失败: ${error.message}</td></tr>`;
                     showToast('加载价格数据失败', 'danger');
                 });
         }
@@ -670,8 +673,9 @@ const html = `<!DOCTYPE html>
             const data = Object.fromEntries(formData.entries());
             
             try {
-                const response = await fetch(\`\${BASE_URL}/api/prices\`, {
+                const response = await fetch(`${BASE_URL}/api/prices`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
@@ -693,8 +697,9 @@ const html = `<!DOCTYPE html>
         // 修改审核价格函数
         async function reviewPrice(id, status) {
             try {
-                const response = await fetch(\`\${BASE_URL}/api/prices/\${id}/review\`, {
+                const response = await fetch(`${BASE_URL}/api/prices/${id}/review`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
@@ -724,7 +729,7 @@ const html = `<!DOCTYPE html>
         // 添加 Toast 提示函数
         function showToast(message, type = 'success') {
             const toast = document.querySelector('.toast');
-            toast.className = \`toast align-items-center text-white bg-\${type} border-0\`;
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
             toast.querySelector('.toast-body').textContent = message;
             const bsToast = new bootstrap.Toast(toast);
             bsToast.show();
@@ -732,14 +737,17 @@ const html = `<!DOCTYPE html>
 
         // 修改登录函数
         function login() {
-            const returnUrl = \`\${BASE_URL}/auth/callback\`;
-            window.location.href = \`\${BASE_URL}/api/auth/login?return_url=\${encodeURIComponent(returnUrl)}\`;
+            const returnUrl = `${BASE_URL}/auth/callback`;
+            window.location.href = `${BASE_URL}/api/auth/login?return_url=${encodeURIComponent(returnUrl)}`;
         }
 
         // 修改登出函数
         async function logout() {
             try {
-                await fetch(\`\${BASE_URL}/api/auth/logout\`, { method: 'POST' });
+                await fetch(`${BASE_URL}/api/auth/logout`, { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
                 window.location.reload();
             } catch (error) {
                 console.error('登出失败:', error);
@@ -809,10 +817,11 @@ function validateData(data: any): string | null {
 // 修改处理函数
 async function handler(req: Request): Promise<Response> {
     const headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Cookie",
-        "Access-Control-Allow-Credentials": "true"
+        "Access-Control-Allow-Origin": "https://aimodels-price.deno.dev",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
+        "Access-Control-Allow-Headers": "Content-Type, Cookie, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400"
     };
 
     const jsonHeaders = {
@@ -828,8 +837,12 @@ async function handler(req: Request): Promise<Response> {
     try {
         const url = new URL(req.url);
         
+        // 处理预检请求
         if (req.method === "OPTIONS") {
-            return new Response(null, { headers });
+            return new Response(null, { 
+                status: 204,
+                headers 
+            });
         }
 
         // 认证状态检查
