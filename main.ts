@@ -321,6 +321,14 @@ const html = `<!DOCTYPE html>
             </div>
         </nav>
 
+        <div class="alert alert-info d-flex align-items-center mb-4">
+            <span class="me-2">价格json:</span>
+            <code class="me-2" id="apiUrl" style="cursor: pointer;" onclick="copyApiUrl()">https://aimodels-price.deno.dev/api/prices</code>
+            <span id="copyStatus" class="text-success" style="display: none;">
+                <i class="fas fa-check-circle me-1"></i>已复制
+            </span>
+        </div>
+
         <div class="row">
             <div class="col-12">
                 <ul class="nav nav-tabs mb-4">
@@ -454,11 +462,12 @@ const html = `<!DOCTYPE html>
     <script>
         let currentUser = null;
         let vendors = null;
+        const API_BASE_URL = 'https://aimodels-price.deno.dev';
 
         // 检查登录状态
         async function checkLoginStatus() {
             try {
-                const response = await fetch('/api/auth/status', {
+                const response = await fetch(API_BASE_URL + '/api/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
@@ -543,7 +552,7 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch('/api/prices', {
+            fetch(API_BASE_URL + '/api/prices', {
                 credentials: 'include'
             })
                 .then(response => {
@@ -660,7 +669,7 @@ const html = `<!DOCTYPE html>
                 })
                 .catch(error => {
                     console.error('加载价格数据失败:', error);
-                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</tr>';
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</td></tr>';
                     showToast('加载价格数据失败', 'danger');
                 });
         }
@@ -672,7 +681,7 @@ const html = `<!DOCTYPE html>
             const data = Object.fromEntries(formData.entries());
             
             try {
-                const response = await fetch('/api/prices', {
+                const response = await fetch(API_BASE_URL + '/api/prices', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -696,7 +705,7 @@ const html = `<!DOCTYPE html>
         // 修改审核价格函数
         async function reviewPrice(id, status) {
             try {
-                const response = await fetch('/api/prices/' + id + '/review', {
+                const response = await fetch(API_BASE_URL + '/api/prices/' + id + '/review', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -740,14 +749,14 @@ const html = `<!DOCTYPE html>
 
         // 修改登录函数
         function login() {
-            const returnUrl = window.location.origin + '/auth/callback';
-            window.location.href = '/api/auth/login?return_url=' + encodeURIComponent(returnUrl);
+            const returnUrl = API_BASE_URL + '/auth/callback';
+            window.location.href = API_BASE_URL + '/api/auth/login?return_url=' + encodeURIComponent(returnUrl);
         }
 
         // 修改登出函数
         async function logout() {
             try {
-                await fetch('/api/auth/logout', { 
+                await fetch(API_BASE_URL + '/api/auth/logout', { 
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -765,6 +774,22 @@ const html = `<!DOCTYPE html>
                 case 'approved': return '已通过';
                 case 'rejected': return '已拒绝';
                 default: return status;
+            }
+        }
+
+        // 添加复制 API URL 的函数
+        async function copyApiUrl() {
+            const apiUrl = document.getElementById('apiUrl').textContent;
+            try {
+                await navigator.clipboard.writeText(apiUrl);
+                const copyStatus = document.getElementById('copyStatus');
+                copyStatus.style.display = 'inline';
+                setTimeout(() => {
+                    copyStatus.style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                showToast('复制失败', 'danger');
             }
         }
 
