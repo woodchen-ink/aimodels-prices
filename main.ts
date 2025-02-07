@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 import { crypto } from "https://deno.land/std@0.220.1/crypto/mod.ts";
-import { encode as base64Encode, decode as base64Decode } from "https://deno.land/std@0.220.1/encoding/base64.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.220.1/encoding/base64url.ts";
 
 // 类型定义
 interface Vendor {
@@ -116,10 +116,12 @@ async function verifyDiscourseSSO(request: Request): Promise<string | null> {
 
 // 修改 generateSSO 函数为异步函数
 async function generateSSO(returnUrl: string): Promise<string> {
-    const payload = base64Encode(`return_sso_url=${encodeURIComponent(returnUrl)}`);
+    const encoder = new TextEncoder();
+    const rawPayload = `return_sso_url=${encodeURIComponent(returnUrl)}`;
+    const base64Payload = btoa(rawPayload);
     const key = await crypto.subtle.importKey(
         "raw",
-        new TextEncoder().encode(DISCOURSE_SSO_SECRET),
+        encoder.encode(DISCOURSE_SSO_SECRET),
         { name: "HMAC", hash: "SHA-256" },
         false,
         ["sign"]
@@ -127,12 +129,12 @@ async function generateSSO(returnUrl: string): Promise<string> {
     const signature = await crypto.subtle.sign(
         "HMAC",
         key,
-        new TextEncoder().encode(payload)
+        encoder.encode(base64Payload)
     );
     const sig = Array.from(new Uint8Array(signature))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
-    return `${DISCOURSE_URL}/session/sso_provider?sso=${encodeURIComponent(payload)}&sig=${sig}`;
+    return `${DISCOURSE_URL}/session/sso_provider?sso=${encodeURIComponent(base64Payload)}&sig=${sig}`;
 }
 
 // HTML 页面
@@ -667,7 +669,7 @@ async function handler(req: Request): Promise<Response> {
             }
 
             // 解码 payload
-            const payload = new TextDecoder().decode(base64Decode(sso));
+            const payload = atob(sso);
             const payloadParams = new URLSearchParams(payload);
             const username = payloadParams.get('username');
 
