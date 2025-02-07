@@ -552,16 +552,17 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch(API_BASE_URL + '/api/prices', {
-                credentials: 'include'
-            })
+            // 直接使用相对路径
+            fetch('/api/prices')
                 .then(response => {
+                    console.log('Response status:', response.status);
                     if (!response.ok) {
                         throw new Error('HTTP error! status: ' + response.status);
                     }
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Received data:', data);
                     tbody.innerHTML = '';
                     
                     if (!data || !Array.isArray(data)) {
@@ -670,7 +671,6 @@ const html = `<!DOCTYPE html>
                 .catch(error => {
                     console.error('加载价格数据失败:', error);
                     tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</td></tr>';
-                    showToast('加载价格数据失败', 'danger');
                 });
         }
 
@@ -727,11 +727,15 @@ const html = `<!DOCTYPE html>
 
         // 初始化
         async function init() {
-            await Promise.all([
-                checkLoginStatus(),
-                loadVendors()
-            ]);
-            loadPrices();
+            console.log('Initializing...');
+            try {
+                await loadVendors();
+                console.log('Vendors loaded');
+                await loadPrices();
+                console.log('Prices loaded');
+            } catch (error) {
+                console.error('初始化失败:', error);
+            }
         }
 
         // 修改 Toast 提示函数
@@ -845,7 +849,7 @@ function validateData(data: any): string | null {
 // 修改处理函数
 async function handler(req: Request): Promise<Response> {
     const headers = {
-        "Access-Control-Allow-Origin": "https://aimodels-price.deno.dev",
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
         "Access-Control-Allow-Headers": "Content-Type, Cookie, Authorization",
         "Access-Control-Allow-Credentials": "true",
@@ -864,13 +868,35 @@ async function handler(req: Request): Promise<Response> {
 
     try {
         const url = new URL(req.url);
-        
+        console.log('Received request:', req.method, url.pathname);
+
         // 处理预检请求
         if (req.method === "OPTIONS") {
             return new Response(null, { 
                 status: 204,
                 headers 
             });
+        }
+
+        // 获取价格列表
+        if (url.pathname === "/api/prices" && req.method === "GET") {
+            try {
+                console.log('Reading prices from KV store...');
+                const prices = await readPrices();
+                console.log('Prices read successfully:', prices.length);
+                return new Response(JSON.stringify(prices), {
+                    headers: jsonHeaders
+                });
+            } catch (error) {
+                console.error('获取价格列表失败:', error);
+                return new Response(JSON.stringify({ 
+                    error: "获取价格列表失败",
+                    details: error.message
+                }), {
+                    status: 500,
+                    headers: jsonHeaders
+                });
+            }
         }
 
         // 认证状态检查
@@ -1152,25 +1178,6 @@ async function handler(req: Request): Promise<Response> {
             }
         }
 
-        // 获取价格列表
-        if (url.pathname === "/api/prices" && req.method === "GET") {
-            try {
-                const prices = await readPrices();
-                return new Response(JSON.stringify(prices), {
-                    headers: jsonHeaders
-                });
-            } catch (error) {
-                console.error('获取价格列表失败:', error);
-                return new Response(JSON.stringify({ 
-                    error: "获取价格列表失败",
-                    details: error.message
-                }), {
-                    status: 500,
-                    headers: jsonHeaders
-                });
-            }
-        }
-        
         // 提供静态页面
         if (url.pathname === "/" || url.pathname === "/index.html") {
             return new Response(html, {
