@@ -51,13 +51,22 @@ interface Price {
 }
 
 // 声明全局变量
-declare const kv: Deno.Kv;
 declare const vendors: { [key: string]: Vendor };
 
 // 缓存供应商数据
 let vendorsCache: VendorResponse | null = null;
 let vendorsCacheTime: number = 0;
 const CACHE_DURATION = 1000 * 60 * 5; // 5分钟缓存
+
+// 初始化 KV 存储
+let kv: Deno.Kv;
+
+try {
+    kv = await Deno.openKv();
+} catch (error) {
+    console.error('初始化 KV 存储失败:', error);
+    Deno.exit(1);
+}
 
 // 获取供应商数据
 async function getVendors(): Promise<VendorResponse> {
@@ -791,8 +800,6 @@ function validateData(data: any): string | null {
 
 // 修改处理函数
 async function handler(req: Request): Promise<Response> {
-    const url = new URL(req.url);
-    
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -800,348 +807,345 @@ async function handler(req: Request): Promise<Response> {
         "Access-Control-Allow-Credentials": "true"
     };
 
-    if (req.method === "OPTIONS") {
-        return new Response(null, { headers });
-    }
+    const jsonHeaders = {
+        ...headers,
+        "Content-Type": "application/json"
+    };
 
-    // 登录处理
-    if (url.pathname === "/api/auth/login") {
-        const params = new URLSearchParams(url.search);
-        const returnUrl = params.get('return_url');
-        if (!returnUrl) {
-            return new Response(JSON.stringify({ error: "缺少 return_url 参数" }), {
-                status: 400,
-                headers: {
-                    "Content-Type": "application/json",
-                    ...headers
-                }
-            });
+    const htmlHeaders = {
+        ...headers,
+        "Content-Type": "text/html; charset=utf-8"
+    };
+
+    try {
+        const url = new URL(req.url);
+        
+        if (req.method === "OPTIONS") {
+            return new Response(null, { headers });
         }
 
-        const ssoUrl = await generateSSO(returnUrl);
-        return new Response(null, {
-            status: 302,
-            headers: {
-                ...headers,
-                "Location": ssoUrl
+        // 认证状态检查
+        if (url.pathname === "/api/auth/status") {
+            try {
+                const username = await verifyDiscourseSSO(req);
+                return new Response(JSON.stringify({ 
+                    authenticated: !!username,
+                    user: username
+                }), { headers: jsonHeaders });
+            } catch (error) {
+                console.error('验证用户状态失败:', error);
+                return new Response(JSON.stringify({ 
+                    error: "验证用户状态失败",
+                    details: error.message
+                }), {
+                    status: 500,
+                    headers: jsonHeaders
+                });
             }
-        });
-    }
-
-    // SSO 回调处理
-    if (url.pathname === "/auth/callback") {
-        const params = new URLSearchParams(url.search);
-        const sso = params.get('sso');
-        const sig = params.get('sig');
-
-        if (!sso || !sig) {
-            return new Response("Invalid SSO parameters", { 
-                status: 400,
-                headers: {
-                    "Content-Type": "text/plain",
-                    ...headers
-                }
-            });
         }
 
-        try {
-            // 验证签名
-            const key = await crypto.subtle.importKey(
-                "raw",
-                new TextEncoder().encode(DISCOURSE_SSO_SECRET),
-                { name: "HMAC", hash: "SHA-256" },
-                false,
-                ["sign"]
-            );
-            const signature = await crypto.subtle.sign(
-                "HMAC",
-                key,
-                new TextEncoder().encode(sso)
-            );
-            const expectedSig = Array.from(new Uint8Array(signature))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
-
-            if (sig !== expectedSig) {
-                throw new Error('Invalid signature');
+        // 登录处理
+        if (url.pathname === "/api/auth/login") {
+            const params = new URLSearchParams(url.search);
+            const returnUrl = params.get('return_url');
+            if (!returnUrl) {
+                return new Response(JSON.stringify({ error: "缺少 return_url 参数" }), {
+                    status: 400,
+                    headers: jsonHeaders
+                });
             }
 
-            // 解码 payload
-            const payload = atob(sso);
-            const payloadParams = new URLSearchParams(payload);
-            
-            // 验证 nonce
-            const nonce = payloadParams.get('nonce');
-            if (!nonce) {
-                throw new Error('Missing nonce');
-            }
-
-            const nonceData = await kv.get(['sso_nonce', nonce]);
-            if (!nonceData.value) {
-                throw new Error('Invalid or expired nonce');
-            }
-
-            // 删除已使用的 nonce
-            await kv.delete(['sso_nonce', nonce]);
-
-            const username = payloadParams.get('username');
-            if (!username) {
-                throw new Error('Missing username');
-            }
-
-            // 设置 session cookie
-            const sessionId = crypto.randomUUID();
-            await kv.set(['sessions', sessionId], { 
-                username,
-                created_at: new Date().toISOString()
-            }, { expireIn: 24 * 60 * 60 * 1000 }); // 24小时过期
-
+            const ssoUrl = await generateSSO(returnUrl);
             return new Response(null, {
                 status: 302,
                 headers: {
                     ...headers,
-                    "Location": "/",
-                    "Set-Cookie": `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
-                }
-            });
-        } catch (error) {
-            console.error('SSO 回调处理失败:', error);
-            return new Response("SSO verification failed: " + error.message, { 
-                status: 400,
-                headers: {
-                    "Content-Type": "text/plain",
-                    ...headers
-                }
-            });
-        }
-    }
-
-    // 登出处理
-    if (url.pathname === "/api/auth/logout" && req.method === "POST") {
-        const cookie = req.headers.get('cookie');
-        if (cookie) {
-            const sessionMatch = cookie.match(/session=([^;]+)/);
-            if (sessionMatch) {
-                const sessionId = sessionMatch[1];
-                await kv.delete(['sessions', sessionId]);
-            }
-        }
-
-        return new Response(JSON.stringify({ success: true }), {
-            headers: {
-                ...headers,
-                "Content-Type": "application/json",
-                "Set-Control-Allow-Credentials": "true",
-                "Set-Cookie": "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
-            }
-        });
-    }
-
-    // 认证状态检查
-    if (url.pathname === "/api/auth/status") {
-        const username = await verifyDiscourseSSO(req);
-        return new Response(JSON.stringify({ 
-            authenticated: !!username,
-            user: username
-        }), {
-            headers: { 
-                "Content-Type": "application/json",
-                ...headers 
-            }
-        });
-    }
-
-    // 价格审核
-    if (url.pathname.match(/^\/api\/prices\/\d+\/review$/)) {
-        const username = await verifyDiscourseSSO(req);
-        if (!username || username !== 'wood') {
-            return new Response(JSON.stringify({ error: "未授权" }), {
-                status: 403,
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
+                    "Location": ssoUrl
                 }
             });
         }
 
-        if (req.method === "POST") {
+        // SSO 回调处理
+        if (url.pathname === "/auth/callback") {
+            const params = new URLSearchParams(url.search);
+            const sso = params.get('sso');
+            const sig = params.get('sig');
+
+            if (!sso || !sig) {
+                return new Response("Invalid SSO parameters", { 
+                    status: 400,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...headers
+                    }
+                });
+            }
+
             try {
-                const id = url.pathname.split('/')[3];
-                const { status } = await req.json();
-                
-                if (status !== 'approved' && status !== 'rejected') {
-                    throw new Error("无效的状态");
+                // 验证签名
+                const key = await crypto.subtle.importKey(
+                    "raw",
+                    new TextEncoder().encode(DISCOURSE_SSO_SECRET),
+                    { name: "HMAC", hash: "SHA-256" },
+                    false,
+                    ["sign"]
+                );
+                const signature = await crypto.subtle.sign(
+                    "HMAC",
+                    key,
+                    new TextEncoder().encode(sso)
+                );
+                const expectedSig = Array.from(new Uint8Array(signature))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+
+                if (sig !== expectedSig) {
+                    throw new Error('Invalid signature');
                 }
 
-                const prices = await readPrices();
-                const priceIndex = prices.findIndex(p => p.id === id);
+                // 解码 payload
+                const payload = atob(sso);
+                const payloadParams = new URLSearchParams(payload);
                 
-                if (priceIndex === -1) {
-                    throw new Error("价格记录不存在");
+                // 验证 nonce
+                const nonce = payloadParams.get('nonce');
+                if (!nonce) {
+                    throw new Error('Missing nonce');
                 }
 
-                prices[priceIndex].status = status;
-                prices[priceIndex].reviewed_by = username;
-                prices[priceIndex].reviewed_at = new Date().toISOString();
+                const nonceData = await kv.get(['sso_nonce', nonce]);
+                if (!nonceData.value) {
+                    throw new Error('Invalid or expired nonce');
+                }
 
-                await writePrices(prices);
+                // 删除已使用的 nonce
+                await kv.delete(['sso_nonce', nonce]);
 
-                return new Response(JSON.stringify({ success: true }), {
-                    headers: { 
-                        "Content-Type": "application/json",
-                        ...headers 
+                const username = payloadParams.get('username');
+                if (!username) {
+                    throw new Error('Missing username');
+                }
+
+                // 设置 session cookie
+                const sessionId = crypto.randomUUID();
+                await kv.set(['sessions', sessionId], { 
+                    username,
+                    created_at: new Date().toISOString()
+                }, { expireIn: 24 * 60 * 60 * 1000 }); // 24小时过期
+
+                return new Response(null, {
+                    status: 302,
+                    headers: {
+                        ...headers,
+                        "Location": "/",
+                        "Set-Cookie": `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
                     }
                 });
             } catch (error) {
+                console.error('SSO 回调处理失败:', error);
+                return new Response("SSO verification failed: " + error.message, { 
+                    status: 400,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...headers
+                    }
+                });
+            }
+        }
+
+        // 登出处理
+        if (url.pathname === "/api/auth/logout" && req.method === "POST") {
+            const cookie = req.headers.get('cookie');
+            if (cookie) {
+                const sessionMatch = cookie.match(/session=([^;]+)/);
+                if (sessionMatch) {
+                    const sessionId = sessionMatch[1];
+                    await kv.delete(['sessions', sessionId]);
+                }
+            }
+
+            return new Response(JSON.stringify({ success: true }), {
+                headers: {
+                    ...jsonHeaders,
+                    "Set-Cookie": "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+                }
+            });
+        }
+
+        // 价格审核
+        if (url.pathname.match(/^\/api\/prices\/\d+\/review$/)) {
+            const username = await verifyDiscourseSSO(req);
+            if (!username || username !== 'wood') {
+                return new Response(JSON.stringify({ error: "未授权" }), {
+                    status: 403,
+                    headers: jsonHeaders
+                });
+            }
+
+            if (req.method === "POST") {
+                try {
+                    const id = url.pathname.split('/')[3];
+                    const { status } = await req.json();
+                    
+                    if (status !== 'approved' && status !== 'rejected') {
+                        throw new Error("无效的状态");
+                    }
+
+                    const prices = await readPrices();
+                    const priceIndex = prices.findIndex(p => p.id === id);
+                    
+                    if (priceIndex === -1) {
+                        throw new Error("价格记录不存在");
+                    }
+
+                    prices[priceIndex].status = status;
+                    prices[priceIndex].reviewed_by = username;
+                    prices[priceIndex].reviewed_at = new Date().toISOString();
+
+                    await writePrices(prices);
+
+                    return new Response(JSON.stringify({ success: true }), {
+                        headers: jsonHeaders
+                    });
+                } catch (error) {
+                    return new Response(JSON.stringify({ 
+                        error: error.message || "审核失败"
+                    }), {
+                        status: 400,
+                        headers: jsonHeaders
+                    });
+                }
+            }
+        }
+
+        // 提交新价格
+        if (url.pathname === "/api/prices" && req.method === "POST") {
+            const username = await verifyDiscourseSSO(req);
+            if (!username) {
+                return new Response(JSON.stringify({ error: "请先登录" }), {
+                    status: 401,
+                    headers: jsonHeaders
+                });
+            }
+
+            try {
+                let rawData;
+                const contentType = req.headers.get("content-type") || "";
+                
+                if (contentType.includes("application/json")) {
+                    rawData = await req.json();
+                } else if (contentType.includes("application/x-www-form-urlencoded")) {
+                    const formData = await req.formData();
+                    rawData = {};
+                    for (const [key, value] of formData.entries()) {
+                        rawData[key] = value;
+                    }
+                } else {
+                    throw new Error("不支持的内容类型");
+                }
+
+                console.log('接收到的数据:', rawData); // 添加日志
+
+                // 处理数据
+                const newPrice: Price = {
+                    model: String(rawData.model).trim(),
+                    billing_type: rawData.billing_type as 'tokens' | 'times',
+                    channel_type: Number(rawData.channel_type),
+                    currency: rawData.currency as 'CNY' | 'USD',
+                    input_price: Number(rawData.input_price),
+                    output_price: Number(rawData.output_price),
+                    input_ratio: calculateRatio(Number(rawData.input_price), rawData.currency as 'CNY' | 'USD'),
+                    output_ratio: calculateRatio(Number(rawData.output_price), rawData.currency as 'CNY' | 'USD'),
+                    price_source: String(rawData.price_source),
+                    status: 'pending',
+                    created_by: username,
+                    created_at: new Date().toISOString()
+                };
+
+                console.log('处理后的数据:', newPrice); // 添加日志
+
+                // 验证数据
+                const error = validatePrice(newPrice);
+                if (error) {
+                    return new Response(JSON.stringify({ error }), {
+                        status: 400,
+                        headers: jsonHeaders
+                    });
+                }
+
+                // 读取现有数据
+                const prices = await readPrices();
+                
+                // 生成唯一ID
+                newPrice.id = Date.now().toString();
+                
+                // 添加新数据
+                prices.push(newPrice);
+                
+                // 保存数据
+                await writePrices(prices);
+                
                 return new Response(JSON.stringify({ 
-                    error: error.message || "审核失败"
+                    success: true,
+                    data: newPrice
                 }), {
-                    status: 400,
-                    headers: { 
-                        "Content-Type": "application/json",
-                        ...headers 
-                    }
+                    headers: jsonHeaders
+                });
+            } catch (error) {
+                console.error("处理价格提交失败:", error);
+                return new Response(JSON.stringify({ 
+                    error: error.message,
+                    details: "数据处理失败，请检查输入格式"
+                }), {
+                    status: 500,
+                    headers: jsonHeaders
                 });
             }
         }
-    }
 
-    // 提交新价格
-    if (url.pathname === "/api/prices" && req.method === "POST") {
-        const username = await verifyDiscourseSSO(req);
-        if (!username) {
-            return new Response(JSON.stringify({ error: "请先登录" }), {
-                status: 401,
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
-                }
-            });
-        }
-
-        try {
-            let rawData;
-            const contentType = req.headers.get("content-type") || "";
-            
-            if (contentType.includes("application/json")) {
-                rawData = await req.json();
-            } else if (contentType.includes("application/x-www-form-urlencoded")) {
-                const formData = await req.formData();
-                rawData = {};
-                for (const [key, value] of formData.entries()) {
-                    rawData[key] = value;
-                }
-            } else {
-                throw new Error("不支持的内容类型");
-            }
-
-            console.log('接收到的数据:', rawData); // 添加日志
-
-            // 处理数据
-            const newPrice: Price = {
-                model: String(rawData.model).trim(),
-                billing_type: rawData.billing_type as 'tokens' | 'times',
-                channel_type: Number(rawData.channel_type),
-                currency: rawData.currency as 'CNY' | 'USD',
-                input_price: Number(rawData.input_price),
-                output_price: Number(rawData.output_price),
-                input_ratio: calculateRatio(Number(rawData.input_price), rawData.currency as 'CNY' | 'USD'),
-                output_ratio: calculateRatio(Number(rawData.output_price), rawData.currency as 'CNY' | 'USD'),
-                price_source: String(rawData.price_source),
-                status: 'pending',
-                created_by: username,
-                created_at: new Date().toISOString()
-            };
-
-            console.log('处理后的数据:', newPrice); // 添加日志
-
-            // 验证数据
-            const error = validatePrice(newPrice);
-            if (error) {
-                return new Response(JSON.stringify({ error }), {
-                    status: 400,
-                    headers: { 
-                        "Content-Type": "application/json",
-                        ...headers 
-                    }
+        // 获取价格列表
+        if (url.pathname === "/api/prices" && req.method === "GET") {
+            try {
+                const prices = await readPrices();
+                return new Response(JSON.stringify(prices), {
+                    headers: jsonHeaders
+                });
+            } catch (error) {
+                console.error('获取价格列表失败:', error);
+                return new Response(JSON.stringify({ 
+                    error: "获取价格列表失败",
+                    details: error.message
+                }), {
+                    status: 500,
+                    headers: jsonHeaders
                 });
             }
-
-            // 读取现有数据
-            const prices = await readPrices();
-            
-            // 生成唯一ID
-            newPrice.id = Date.now().toString();
-            
-            // 添加新数据
-            prices.push(newPrice);
-            
-            // 保存数据
-            await writePrices(prices);
-            
-            return new Response(JSON.stringify({ 
-                success: true,
-                data: newPrice
-            }), {
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
-                }
-            });
-        } catch (error) {
-            console.error("处理价格提交失败:", error);
-            return new Response(JSON.stringify({ 
-                error: error.message,
-                details: "数据处理失败，请检查输入格式"
-            }), {
-                status: 500,
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
-                }
+        }
+        
+        // 提供静态页面
+        if (url.pathname === "/" || url.pathname === "/index.html") {
+            return new Response(html, {
+                headers: htmlHeaders
             });
         }
-    }
-
-    // 获取价格列表
-    if (url.pathname === "/api/prices" && req.method === "GET") {
-        try {
-            const prices = await readPrices();
-            return new Response(JSON.stringify(prices), {
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
-                }
-            });
-        } catch (error) {
-            console.error('获取价格列表失败:', error);
-            return new Response(JSON.stringify({ 
-                error: "获取价格列表失败",
-                details: error.message
-            }), {
-                status: 500,
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...headers 
-                }
-            });
-        }
-    }
-    
-    // 提供静态页面
-    if (url.pathname === "/" || url.pathname === "/index.html") {
-        return new Response(html, {
-            headers: { 
-                "Content-Type": "text/html; charset=utf-8",
-                ...headers 
+        
+        return new Response("Not Found", { 
+            status: 404,
+            headers: {
+                ...headers,
+                "Content-Type": "text/plain"
             }
         });
+    } catch (error) {
+        console.error('处理请求失败:', error);
+        return new Response(JSON.stringify({ 
+            error: "处理请求失败",
+            details: error.message
+        }), {
+            status: 500,
+            headers: jsonHeaders
+        });
     }
-    
-    return new Response("Not Found", { 
-        status: 404,
-        headers 
-    });
 }
 
 // 启动服务器
