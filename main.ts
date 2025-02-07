@@ -1,7 +1,6 @@
-import { serve } from "std/http/server.ts";
-import { crypto } from "std/crypto/mod.ts";
-import { encode as base64Encode, decode as base64Decode } from "std/encoding/base64.ts";
-import { createHmac } from "crypto";
+import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
+import { crypto } from "https://deno.land/std@0.220.1/crypto/mod.ts";
+import { encode as base64Encode, decode as base64Decode } from "https://deno.land/std@0.220.1/encoding/base64.ts";
 
 // 类型定义
 interface Vendor {
