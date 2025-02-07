@@ -476,10 +476,9 @@ const html = `<!DOCTYPE html>
             const submitTab = document.querySelector('a[href="#submit"]');
             
             if (currentUser) {
-                loginStatus.innerHTML = `
-                    <span class="me-2">欢迎, ${currentUser}</span>
-                    <button onclick="logout()" class="btn btn-outline-danger btn-sm">退出</button>
-                `;
+                loginStatus.innerHTML = 
+                    '<span class="me-2">欢迎, ' + currentUser + '</span>' +
+                    '<button onclick="logout()" class="btn btn-outline-danger btn-sm">退出</button>';
                 submitTab.style.display = 'block';
                 // 重新加载价格数据以更新操作列
                 loadPrices();
@@ -532,7 +531,8 @@ const html = `<!DOCTYPE html>
 
             thead.innerHTML = columns
                 .filter(col => col.always || (currentUser === 'wood'))
-                .map(col => `<th>${col.title}</th>`).join('');
+                .map(col => '<th>' + col.title + '</th>')
+                .join('');
         }
 
         // 修改加载价格数据函数
@@ -578,7 +578,7 @@ const html = `<!DOCTYPE html>
 
                         const billingTypeCell = document.createElement('td');
                         const billingTypeBadge = document.createElement('span');
-                        billingTypeBadge.className = `badge badge-${safePrice.billing_type}`;
+                        billingTypeBadge.className = 'badge badge-' + safePrice.billing_type;
                         billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
                         billingTypeCell.appendChild(billingTypeBadge);
 
@@ -620,7 +620,7 @@ const html = `<!DOCTYPE html>
 
                         const statusCell = document.createElement('td');
                         const statusBadge = document.createElement('span');
-                        statusBadge.className = `badge badge-${safePrice.status}`;
+                        statusBadge.className = 'badge badge-' + safePrice.status;
                         statusBadge.textContent = getStatusText(safePrice.status);
                         statusCell.appendChild(statusBadge);
 
@@ -725,11 +725,15 @@ const html = `<!DOCTYPE html>
             loadPrices();
         }
 
-        // 添加 Toast 提示函数
+        // 修改 Toast 提示函数
         function showToast(message, type = 'success') {
             const toast = document.querySelector('.toast');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
-            toast.querySelector('.toast-body').textContent = message;
+            if (!toast) return;
+            toast.className = 'toast align-items-center text-white bg-' + type + ' border-0';
+            const toastBody = toast.querySelector('.toast-body');
+            if (toastBody) {
+                toastBody.textContent = message;
+            }
             const bsToast = new bootstrap.Toast(toast);
             bsToast.show();
         }
