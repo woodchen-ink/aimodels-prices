@@ -16,6 +16,7 @@ const html = `<!DOCTYPE html>
         .message { margin-top: 10px; padding: 10px; border-radius: 4px; }
         .error { background: #ffebee; color: #c62828; }
         .success { background: #e8f5e9; color: #2e7d32; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
     </style>
 </head>
 <body>
@@ -32,18 +33,19 @@ const html = `<!DOCTYPE html>
             </div>
             <div class="form-group">
                 <label for="channel_type">Channel Type:</label>
-                <input type="number" id="channel_type" name="channel_type" required>
+                <input type="number" id="channel_type" name="channel_type" min="0" step="1" required>
             </div>
             <div class="form-group">
                 <label for="input">Input Price:</label>
-                <input type="number" id="input" name="input" step="0.0001" required>
+                <input type="number" id="input" name="input" min="0" step="0.0001" required>
             </div>
             <div class="form-group">
                 <label for="output">Output Price:</label>
-                <input type="number" id="output" name="output" step="0.0001" required>
+                <input type="number" id="output" name="output" min="0" step="0.0001" required>
             </div>
             <button type="submit">Update Price</button>
             <div id="message"></div>
+            <div id="debug" style="margin-top: 20px;"></div>
         </form>
     </div>
 
@@ -51,40 +53,20 @@ const html = `<!DOCTYPE html>
         document.getElementById('priceForm').onsubmit = async (e) => {
             e.preventDefault();
             const messageDiv = document.getElementById('message');
+            const debugDiv = document.getElementById('debug');
             
             try {
                 // 获取表单数据
-                const model = document.getElementById('model').value.trim();
-                const type = document.getElementById('type').value.trim();
-                const channel_type = document.getElementById('channel_type').value;
-                const input = document.getElementById('input').value;
-                const output = document.getElementById('output').value;
-
-                // 验证必填字段
-                if (!model || !type || channel_type === '' || input === '' || output === '') {
-                    throw new Error('请填写所有字段');
-                }
-
-                // 验证数字格式
                 const data = {
-                    model,
-                    type,
-                    channel_type: Number(channel_type),
-                    input: Number(input),
-                    output: Number(output)
+                    model: document.getElementById('model').value.trim(),
+                    type: document.getElementById('type').value.trim(),
+                    channel_type: Number(document.getElementById('channel_type').value),
+                    input: Number(document.getElementById('input').value),
+                    output: Number(document.getElementById('output').value)
                 };
 
-                // 验证数字有效性
-                if (isNaN(data.channel_type) || isNaN(data.input) || isNaN(data.output)) {
-                    throw new Error('请输入有效的数字');
-                }
-
-                // 验证数字范围（允许等于0）
-                if (data.channel_type < 0 || data.input < 0 || data.output < 0) {
-                    throw new Error('数字不能小于0');
-                }
-
-                console.log('Sending data:', data); // 调试日志
+                // 显示发送的数据（调试用）
+                debugDiv.innerHTML = '<strong>发送的数据:</strong><pre>' + JSON.stringify(data, null, 2) + '</pre>';
                 
                 const response = await fetch('/api/prices', {
                     method: 'POST',
@@ -93,12 +75,15 @@ const html = `<!DOCTYPE html>
                 });
                 
                 const result = await response.json();
-                console.log('Server response:', result); // 调试日志
+                
+                // 显示服务器响应（调试用）
+                debugDiv.innerHTML += '<strong>服务器响应:</strong><pre>' + JSON.stringify(result, null, 2) + '</pre>';
                 
                 if (response.ok) {
                     messageDiv.className = 'message success';
                     messageDiv.textContent = '价格更新成功！';
                     e.target.reset();
+                    debugDiv.innerHTML = ''; // 清除调试信息
                 } else {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = result.error || '更新失败';
@@ -106,7 +91,7 @@ const html = `<!DOCTYPE html>
             } catch (error) {
                 console.error('Error:', error);
                 messageDiv.className = 'message error';
-                messageDiv.textContent = error.message || '更新失败';
+                messageDiv.textContent = '更新失败: ' + error.message;
             }
         };
     </script>
@@ -166,16 +151,6 @@ async function handler(req: Request): Promise<Response> {
         return new Response(null, { headers });
     }
     
-    // 提供静态页面
-    if (url.pathname === "/" || url.pathname === "/index.html") {
-        return new Response(html, {
-            headers: { 
-                "Content-Type": "text/html; charset=utf-8",
-                ...headers 
-            }
-        });
-    }
-    
     // API 端点
     if (url.pathname === "/api/prices") {
         if (req.method === "POST") {
@@ -189,16 +164,29 @@ async function handler(req: Request): Promise<Response> {
                     const formData = await req.formData();
                     data = {};
                     for (const [key, value] of formData.entries()) {
-                        data[key] = value;
+                        // 如果值包含逗号，只取第一个值
+                        const actualValue = String(value).split(',')[0];
+                        data[key] = actualValue;
                     }
                 } else {
                     throw new Error("不支持的内容类型");
                 }
                 
-                console.log("Received data:", data); // 调试日志
+                console.log("Received raw data:", data); // 调试日志
+                
+                // 清理和转换数据
+                const cleanData = {
+                    model: String(data.model).trim(),
+                    type: String(data.type).trim(),
+                    channel_type: Number(String(data.channel_type).split(',')[0]),
+                    input: Number(String(data.input).split(',')[0]),
+                    output: Number(String(data.output).split(',')[0])
+                };
+                
+                console.log("Cleaned data:", cleanData); // 调试日志
                 
                 // 验证数据
-                const error = validateData(data);
+                const error = validateData(cleanData);
                 if (error) {
                     return new Response(JSON.stringify({ error }), {
                         status: 400,
@@ -209,27 +197,19 @@ async function handler(req: Request): Promise<Response> {
                     });
                 }
                 
-                // 转换数据类型
-                const newPrice = {
-                    model: String(data.model),
-                    type: String(data.type),
-                    channel_type: Number(data.channel_type),
-                    input: Number(data.input),
-                    output: Number(data.output)
-                };
-                
-                console.log("Processed data:", newPrice); // 调试日志
-                
                 // 读取现有数据
                 const prices = await readPrices();
                 
                 // 添加新数据
-                prices.push(newPrice);
+                prices.push(cleanData);
                 
                 // 保存数据
                 await writePrices(prices);
                 
-                return new Response(JSON.stringify({ success: true }), {
+                return new Response(JSON.stringify({ 
+                    success: true,
+                    data: cleanData 
+                }), {
                     headers: { 
                         "Content-Type": "application/json",
                         ...headers 
@@ -257,6 +237,16 @@ async function handler(req: Request): Promise<Response> {
                 }
             });
         }
+    }
+    
+    // 提供静态页面
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+        return new Response(html, {
+            headers: { 
+                "Content-Type": "text/html; charset=utf-8",
+                ...headers 
+            }
+        });
     }
     
     return new Response("Not Found", { 
