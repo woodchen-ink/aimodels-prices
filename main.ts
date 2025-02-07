@@ -454,16 +454,18 @@ const html = `<!DOCTYPE html>
     <script>
         let currentUser = null;
         let vendors = null;
+        const BASE_URL = window.location.origin;
 
         // 检查登录状态
         async function checkLoginStatus() {
             try {
-                const response = await fetch('/api/auth/status');
+                const response = await fetch(\`\${BASE_URL}/api/auth/status\`);
                 const data = await response.json();
                 currentUser = data.user;
                 updateLoginUI();
             } catch (error) {
                 console.error('检查登录状态失败:', error);
+                showToast('检查登录状态失败', 'danger');
             }
         }
 
@@ -541,8 +543,13 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch('/api/prices')
-                .then(response => response.json())
+            fetch(\`\${BASE_URL}/api/prices\`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(\`HTTP error! status: \${response.status}\`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     tbody.innerHTML = '';
                     
@@ -651,56 +658,57 @@ const html = `<!DOCTYPE html>
                 })
                 .catch(error => {
                     console.error('加载价格数据失败:', error);
-                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败</td></tr>';
+                    tbody.innerHTML = \`<tr><td colspan="11" class="text-center">加载失败: \${error.message}</td></tr>\`;
+                    showToast('加载价格数据失败', 'danger');
                 });
         }
 
-        // 提交新价格
+        // 修改提交新价格函数
         document.getElementById('newPriceForm').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
             
             try {
-                const response = await fetch('/api/prices', {
+                const response = await fetch(\`\${BASE_URL}/api/prices\`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 
                 if (response.ok) {
-                    alert('提交成功，等待审核');
+                    showToast('提交成功，等待审核', 'success');
                     e.target.reset();
                     loadPrices();
                 } else {
                     const error = await response.json();
-                    alert(error.message || '提交失败');
+                    showToast(error.message || '提交失败', 'danger');
                 }
             } catch (error) {
                 console.error('提交价格失败:', error);
-                alert('提交失败');
+                showToast('提交失败', 'danger');
             }
         };
 
-        // 审核价格
+        // 修改审核价格函数
         async function reviewPrice(id, status) {
             try {
-                const response = await fetch(\`/api/prices/\${id}/review\`, {
+                const response = await fetch(\`\${BASE_URL}/api/prices/\${id}/review\`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
                 
                 if (response.ok) {
-                    alert('审核成功');
+                    showToast('审核成功', 'success');
                     loadPrices();
                 } else {
                     const error = await response.json();
-                    alert(error.message || '审核失败');
+                    showToast(error.message || '审核失败', 'danger');
                 }
             } catch (error) {
                 console.error('审核价格失败:', error);
-                alert('审核失败');
+                showToast('审核失败', 'danger');
             }
         }
 
@@ -722,16 +730,16 @@ const html = `<!DOCTYPE html>
             bsToast.show();
         }
 
-        // 登录函数
+        // 修改登录函数
         function login() {
-            const returnUrl = \`\${window.location.origin}/auth/callback\`;
-            window.location.href = \`/api/auth/login?return_url=\${encodeURIComponent(returnUrl)}\`;
+            const returnUrl = \`\${BASE_URL}/auth/callback\`;
+            window.location.href = \`\${BASE_URL}/api/auth/login?return_url=\${encodeURIComponent(returnUrl)}\`;
         }
 
-        // 登出函数
+        // 修改登出函数
         async function logout() {
             try {
-                await fetch('/api/auth/logout', { method: 'POST' });
+                await fetch(\`\${BASE_URL}/api/auth/logout\`, { method: 'POST' });
                 window.location.reload();
             } catch (error) {
                 console.error('登出失败:', error);
