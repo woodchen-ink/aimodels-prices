@@ -114,10 +114,11 @@ async function verifyDiscourseSSO(request: Request): Promise<string | null> {
     return session.value.username;
 }
 
-// 修改 generateSSO 函数为异步函数
+// 修改 generateSSO 函数
 async function generateSSO(returnUrl: string): Promise<string> {
     const encoder = new TextEncoder();
-    const rawPayload = `return_sso_url=${encodeURIComponent(returnUrl)}`;
+    const nonce = crypto.randomUUID();
+    const rawPayload = `nonce=${nonce}&return_sso_url=${encodeURIComponent(returnUrl)}`;
     const base64Payload = btoa(rawPayload);
     const key = await crypto.subtle.importKey(
         "raw",
@@ -134,6 +135,13 @@ async function generateSSO(returnUrl: string): Promise<string> {
     const sig = Array.from(new Uint8Array(signature))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+
+    // 存储 nonce 用于验证回调
+    await kv.set(['sso_nonce', nonce], {
+        return_url: returnUrl,
+        created_at: new Date().toISOString()
+    }, { expireIn: 5 * 60 * 1000 }); // 5分钟过期
+
     return `${DISCOURSE_URL}/session/sso_provider?sso=${encodeURIComponent(base64Payload)}&sig=${sig}`;
 }
 
@@ -392,17 +400,17 @@ const html = `<!DOCTYPE html>
         // 更新登录UI
         function updateLoginUI() {
             const loginStatus = document.getElementById('loginStatus');
-            const submitForm = document.getElementById('submitForm');
+            const submitTab = document.querySelector('a[href="#submit"]');
             
             if (currentUser) {
                 loginStatus.innerHTML = \`
                     <span class="me-2">欢迎, \${currentUser}</span>
                     <button onclick="logout()" class="btn btn-outline-danger btn-sm">退出</button>
                 \`;
-                submitForm.style.display = 'block';
+                submitTab.style.display = 'block';
             } else {
                 loginStatus.innerHTML = '<button onclick="login()" class="btn btn-primary btn-sm">通过 Discourse 登录</button>';
-                submitForm.style.display = 'none';
+                submitTab.style.display = 'none';
             }
         }
 
@@ -435,20 +443,22 @@ const html = `<!DOCTYPE html>
                 tbody.innerHTML = '';
 
                 prices.forEach(price => {
-                    const vendor = vendors[price.channel_type];
+                    const vendor = vendors?.[price.channel_type];
                     const tr = document.createElement('tr');
+                    const inputRatio = price.input_ratio ?? 0;
+                    const outputRatio = price.output_ratio ?? 0;
                     tr.innerHTML = \`
                         <td>\${price.model}</td>
                         <td><span class="badge badge-\${price.billing_type}">\${price.billing_type === 'tokens' ? '按量计费' : '按次计费'}</span></td>
                         <td>
-                            <img src="\${vendor?.icon}" class="vendor-icon" alt="\${vendor?.name}">
-                            \${vendor?.name || '未知供应商'}
+                            <img src="\${vendor?.icon ?? ''}" class="vendor-icon" alt="\${vendor?.name ?? '未知供应商'}" onerror="this.style.display='none'">
+                            \${vendor?.name ?? '未知供应商'}
                         </td>
                         <td>\${price.currency}</td>
                         <td>\${price.input_price}</td>
                         <td>\${price.output_price}</td>
-                        <td>\${price.input_ratio.toFixed(4)}</td>
-                        <td>\${price.output_ratio.toFixed(4)}</td>
+                        <td>\${inputRatio.toFixed(4)}</td>
+                        <td>\${outputRatio.toFixed(4)}</td>
                         <td><a href="\${price.price_source}" target="_blank" class="source-link">查看来源</a></td>
                         <td><span class="badge badge-\${price.status}">\${price.status}</span></td>
                         <td>
@@ -462,6 +472,8 @@ const html = `<!DOCTYPE html>
                 });
             } catch (error) {
                 console.error('加载价格数据失败:', error);
+                const tbody = document.getElementById('priceTable');
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">加载数据失败</td></tr>';
             }
         }
 
@@ -558,14 +570,24 @@ const html = `<!DOCTYPE html>
 const kv = await Deno.openKv();
 
 // 读取价格数据
-async function readPrices(): Promise<any[]> {
-    const prices = await kv.get(["prices"]);
-    return prices.value || [];
+async function readPrices(): Promise<Price[]> {
+    try {
+        const prices = await kv.get(["prices"]);
+        return prices.value || [];
+    } catch (error) {
+        console.error('读取价格数据失败:', error);
+        return [];
+    }
 }
 
 // 写入价格数据
-async function writePrices(prices: any[]): Promise<void> {
-    await kv.set(["prices"], prices);
+async function writePrices(prices: Price[]): Promise<void> {
+    try {
+        await kv.set(["prices"], prices);
+    } catch (error) {
+        console.error('写入价格数据失败:', error);
+        throw new Error('写入价格数据失败');
+    }
 }
 
 // 修改验证函数
@@ -671,8 +693,22 @@ async function handler(req: Request): Promise<Response> {
             // 解码 payload
             const payload = atob(sso);
             const payloadParams = new URLSearchParams(payload);
-            const username = payloadParams.get('username');
+            
+            // 验证 nonce
+            const nonce = payloadParams.get('nonce');
+            if (!nonce) {
+                throw new Error('Missing nonce');
+            }
 
+            const nonceData = await kv.get(['sso_nonce', nonce]);
+            if (!nonceData.value) {
+                throw new Error('Invalid or expired nonce');
+            }
+
+            // 删除已使用的 nonce
+            await kv.delete(['sso_nonce', nonce]);
+
+            const username = payloadParams.get('username');
             if (!username) {
                 throw new Error('Missing username');
             }
@@ -694,7 +730,7 @@ async function handler(req: Request): Promise<Response> {
             });
         } catch (error) {
             console.error('SSO 回调处理失败:', error);
-            return new Response("SSO verification failed", { 
+            return new Response("SSO verification failed: " + error.message, { 
                 status: 400,
                 headers: {
                     "Content-Type": "text/plain",
@@ -889,13 +925,27 @@ async function handler(req: Request): Promise<Response> {
 
     // 获取价格列表
     if (url.pathname === "/api/prices" && req.method === "GET") {
-        const prices = await readPrices();
-        return new Response(JSON.stringify(prices), {
-            headers: { 
-                "Content-Type": "application/json",
-                ...headers 
-            }
-        });
+        try {
+            const prices = await readPrices();
+            return new Response(JSON.stringify(prices), {
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...headers 
+                }
+            });
+        } catch (error) {
+            console.error('获取价格列表失败:', error);
+            return new Response(JSON.stringify({ 
+                error: "获取价格列表失败",
+                details: error.message
+            }), {
+                status: 500,
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...headers 
+                }
+            });
+        }
     }
     
     // 提供静态页面
