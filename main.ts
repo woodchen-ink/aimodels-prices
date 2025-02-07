@@ -51,19 +51,41 @@ const html = `<!DOCTYPE html>
         document.getElementById('priceForm').onsubmit = async (e) => {
             e.preventDefault();
             const messageDiv = document.getElementById('message');
-            const formData = new FormData(e.target);
-            
-            // 构建请求数据
-            const data = {};
-            for (const [key, value] of formData.entries()) {
-                if (key === 'channel_type' || key === 'input' || key === 'output') {
-                    data[key] = Number(value);
-                } else {
-                    data[key] = value;
-                }
-            }
             
             try {
+                // 获取表单数据
+                const model = document.getElementById('model').value.trim();
+                const type = document.getElementById('type').value.trim();
+                const channel_type = document.getElementById('channel_type').value;
+                const input = document.getElementById('input').value;
+                const output = document.getElementById('output').value;
+
+                // 验证必填字段
+                if (!model || !type || channel_type === '' || input === '' || output === '') {
+                    throw new Error('请填写所有字段');
+                }
+
+                // 验证数字格式
+                const data = {
+                    model,
+                    type,
+                    channel_type: Number(channel_type),
+                    input: Number(input),
+                    output: Number(output)
+                };
+
+                // 验证数字有效性
+                if (isNaN(data.channel_type) || isNaN(data.input) || isNaN(data.output)) {
+                    throw new Error('请输入有效的数字');
+                }
+
+                // 验证数字范围（允许等于0）
+                if (data.channel_type < 0 || data.input < 0 || data.output < 0) {
+                    throw new Error('数字不能小于0');
+                }
+
+                console.log('Sending data:', data); // 调试日志
+                
                 const response = await fetch('/api/prices', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -71,6 +93,7 @@ const html = `<!DOCTYPE html>
                 });
                 
                 const result = await response.json();
+                console.log('Server response:', result); // 调试日志
                 
                 if (response.ok) {
                     messageDiv.className = 'message success';
@@ -83,7 +106,7 @@ const html = `<!DOCTYPE html>
             } catch (error) {
                 console.error('Error:', error);
                 messageDiv.className = 'message error';
-                messageDiv.textContent = '更新失败: ' + error.message;
+                messageDiv.textContent = error.message || '更新失败';
             }
         };
     </script>
@@ -104,14 +127,24 @@ async function writePrices(prices: any[]): Promise<void> {
     await kv.set(["prices"], prices);
 }
 
-// 验证请求数据
+// 修改验证函数
 function validateData(data: any): string | null {
-    if (!data.model || !data.type || !data.channel_type || !data.input || !data.output) {
+    if (!data.model || !data.type || data.channel_type === undefined || data.input === undefined || data.output === undefined) {
         return "所有字段都是必需的";
     }
     
-    if (isNaN(data.channel_type) || isNaN(data.input) || isNaN(data.output)) {
+    // 确保数字字段是数字类型
+    const channel_type = Number(data.channel_type);
+    const input = Number(data.input);
+    const output = Number(data.output);
+    
+    if (isNaN(channel_type) || isNaN(input) || isNaN(output)) {
         return "数字字段格式无效";
+    }
+    
+    // 验证数字范围（允许等于0）
+    if (channel_type < 0 || input < 0 || output < 0) {
+        return "数字不能小于0";
     }
     
     return null;
@@ -162,6 +195,8 @@ async function handler(req: Request): Promise<Response> {
                     throw new Error("不支持的内容类型");
                 }
                 
+                console.log("Received data:", data); // 调试日志
+                
                 // 验证数据
                 const error = validateData(data);
                 if (error) {
@@ -176,12 +211,14 @@ async function handler(req: Request): Promise<Response> {
                 
                 // 转换数据类型
                 const newPrice = {
-                    model: data.model,
-                    type: data.type,
-                    channel_type: parseInt(data.channel_type),
-                    input: parseFloat(data.input),
-                    output: parseFloat(data.output)
+                    model: String(data.model),
+                    type: String(data.type),
+                    channel_type: Number(data.channel_type),
+                    input: Number(data.input),
+                    output: Number(data.output)
                 };
+                
+                console.log("Processed data:", newPrice); // 调试日志
                 
                 // 读取现有数据
                 const prices = await readPrices();
@@ -199,8 +236,11 @@ async function handler(req: Request): Promise<Response> {
                     }
                 });
             } catch (error) {
-                console.error("Error:", error);
-                return new Response(JSON.stringify({ error: error.message }), {
+                console.error("Processing error:", error); // 调试日志
+                return new Response(JSON.stringify({ 
+                    error: error.message,
+                    details: "数据处理失败，请检查输入格式"
+                }), {
                     status: 500,
                     headers: { 
                         "Content-Type": "application/json",
