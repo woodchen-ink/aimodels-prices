@@ -552,7 +552,14 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch(API_BASE_URL + '/api/prices')
+            fetch(API_BASE_URL + '/api/prices', {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
                 .then(response => {
                     console.log('Response:', response);
                     if (!response.ok) {
@@ -861,9 +868,9 @@ function validateData(data: any): string | null {
 // 修改处理函数
 async function handler(req: Request): Promise<Response> {
     const headers = {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": req.headers.get("origin") || "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
-        "Access-Control-Allow-Headers": "Content-Type, Cookie, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type, Cookie, Authorization, Accept",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400"
     };
