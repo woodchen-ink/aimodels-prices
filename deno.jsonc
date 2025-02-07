@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["dom", "dom.iterable", "deno.ns"],
+    "strict": true,
+    "types": ["https://deno.land/x/types/deno.ns.d.ts"]
+  },
+  "importMap": "import_map.json",
+  "tasks": {
+    "start": "deno run --allow-net --allow-read --allow-env main.ts",
+    "dev": "deno run --watch --allow-net --allow-read --allow-env main.ts"
+  }
+} 

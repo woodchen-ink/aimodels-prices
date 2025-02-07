@@ -1,6 +1,23 @@
-import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
-import { crypto } from "https://deno.land/std@0.220.1/crypto/mod.ts";
-import { decode as base64Decode } from "https://deno.land/std@0.220.1/encoding/base64url.ts";
+/// <reference types="https://deno.land/x/types/deno.ns.d.ts" />
+
+import { serve, crypto, base64Decode } from "./deps.ts";
+
+// 声明 Deno 命名空间
+declare namespace Deno {
+    interface Kv {
+        get(key: unknown[]): Promise<{ value: any }>;
+        set(key: unknown[], value: unknown, options?: { expireIn?: number }): Promise<void>;
+        delete(key: unknown[]): Promise<void>;
+    }
+
+    interface Env {
+        get(key: string): string | undefined;
+    }
+
+    const env: Env;
+    const exit: (code: number) => never;
+    const openKv: () => Promise<Kv>;
+}
 
 // 类型定义
 interface Vendor {
@@ -33,6 +50,10 @@ interface Price {
     reviewed_at?: string;
 }
 
+// 声明全局变量
+declare const kv: Deno.Kv;
+declare const vendors: { [key: string]: Vendor };
+
 // 缓存供应商数据
 let vendorsCache: VendorResponse | null = null;
 let vendorsCacheTime: number = 0;
@@ -62,8 +83,10 @@ function calculateRatio(price: number, currency: 'CNY' | 'USD'): number {
     return currency === 'USD' ? price / 2 : price / 14;
 }
 
-// 验证价格数据
+// 修改验证价格数据函数
 function validatePrice(data: any): string | null {
+    console.log('验证数据:', data); // 添加日志
+
     if (!data.model || !data.billing_type || !data.channel_type || 
         !data.currency || data.input_price === undefined || data.output_price === undefined ||
         !data.price_source) {
@@ -78,12 +101,16 @@ function validatePrice(data: any): string | null {
         return "币种必须是 CNY 或 USD";
     }
 
-    if (isNaN(data.input_price) || isNaN(data.output_price)) {
-        return "价格必须是数字";
+    const channel_type = Number(data.channel_type);
+    const input_price = Number(data.input_price);
+    const output_price = Number(data.output_price);
+
+    if (isNaN(channel_type) || isNaN(input_price) || isNaN(output_price)) {
+        return "价格和供应商ID必须是数字";
     }
 
-    if (data.input_price < 0 || data.output_price < 0) {
-        return "价格不能为负数";
+    if (channel_type < 0 || input_price < 0 || output_price < 0) {
+        return "价格和供应商ID不能为负数";
     }
 
     return null;
@@ -180,21 +207,24 @@ const html = `<!DOCTYPE html>
         .badge {
             font-size: 0.8em;
             padding: 5px 10px;
+            color: white !important;
+            font-weight: 500;
         }
         .badge-tokens {
-            background-color: #4CAF50;
+            background-color: #4CAF50 !important;
         }
         .badge-times {
-            background-color: #2196F3;
+            background-color: #2196F3 !important;
         }
         .badge-pending {
-            background-color: #FFC107;
+            background-color: #FFC107 !important;
+            color: #000 !important;
         }
         .badge-approved {
-            background-color: #4CAF50;
+            background-color: #4CAF50 !important;
         }
         .badge-rejected {
-            background-color: #F44336;
+            background-color: #F44336 !important;
         }
         .table th {
             white-space: nowrap;
@@ -250,6 +280,21 @@ const html = `<!DOCTYPE html>
         .badge:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 添加状态说明 */
+        .status-legend {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+        }
+        .status-legend .badge {
+            margin-right: 0.5rem;
+        }
+        .status-legend-item {
+            display: inline-block;
+            margin-right: 1.5rem;
         }
     </style>
 </head>
@@ -313,6 +358,22 @@ const html = `<!DOCTYPE html>
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <!-- 添加状态说明 -->
+                                <div class="status-legend">
+                                    <h6 class="mb-2">状态说明：</h6>
+                                    <div class="status-legend-item">
+                                        <span class="badge badge-pending">待审核</span>
+                                        新提交的价格记录
+                                    </div>
+                                    <div class="status-legend-item">
+                                        <span class="badge badge-approved">已通过</span>
+                                        管理员审核通过
+                                    </div>
+                                    <div class="status-legend-item">
+                                        <span class="badge badge-rejected">已拒绝</span>
+                                        管理员拒绝
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -408,9 +469,13 @@ const html = `<!DOCTYPE html>
                     <button onclick="logout()" class="btn btn-outline-danger btn-sm">退出</button>
                 \`;
                 submitTab.style.display = 'block';
+                // 重新加载价格数据以更新操作列
+                loadPrices();
             } else {
                 loginStatus.innerHTML = '<button onclick="login()" class="btn btn-primary btn-sm">通过 Discourse 登录</button>';
                 submitTab.style.display = 'none';
+                // 重新加载价格数据以隐藏操作列
+                loadPrices();
             }
         }
 
@@ -434,47 +499,151 @@ const html = `<!DOCTYPE html>
             }
         }
 
-        // 加载价格数据
-        async function loadPrices() {
-            try {
-                const response = await fetch('/api/prices');
-                const prices = await response.json();
-                const tbody = document.getElementById('priceTable');
-                tbody.innerHTML = '';
+        // 修改表格头部的渲染
+        function updateTableHeader() {
+            const thead = document.querySelector('table thead tr');
+            if (!thead) return;
 
-                prices.forEach(price => {
-                    const vendor = vendors?.[price.channel_type];
-                    const tr = document.createElement('tr');
-                    const inputRatio = price.input_ratio ?? 0;
-                    const outputRatio = price.output_ratio ?? 0;
-                    tr.innerHTML = \`
-                        <td>\${price.model}</td>
-                        <td><span class="badge badge-\${price.billing_type}">\${price.billing_type === 'tokens' ? '按量计费' : '按次计费'}</span></td>
-                        <td>
-                            <img src="\${vendor?.icon ?? ''}" class="vendor-icon" alt="\${vendor?.name ?? '未知供应商'}" onerror="this.style.display='none'">
-                            \${vendor?.name ?? '未知供应商'}
-                        </td>
-                        <td>\${price.currency}</td>
-                        <td>\${price.input_price}</td>
-                        <td>\${price.output_price}</td>
-                        <td>\${inputRatio.toFixed(4)}</td>
-                        <td>\${outputRatio.toFixed(4)}</td>
-                        <td><a href="\${price.price_source}" target="_blank" class="source-link">查看来源</a></td>
-                        <td><span class="badge badge-\${price.status}">\${price.status}</span></td>
-                        <td>
-                            \${currentUser === 'wood' && price.status === 'pending' ? \`
-                                <button onclick="reviewPrice('\${price.id}', 'approved')" class="btn btn-success btn-sm">通过</button>
-                                <button onclick="reviewPrice('\${price.id}', 'rejected')" class="btn btn-danger btn-sm">拒绝</button>
-                            \` : ''}
-                        </td>
-                    \`;
-                    tbody.appendChild(tr);
+            const columns = [
+                { title: '模型名称', always: true },
+                { title: '计费类型', always: true },
+                { title: '供应商', always: true },
+                { title: '币种', always: true },
+                { title: '输入价格(M)', always: true },
+                { title: '输出价格(M)', always: true },
+                { title: '输入倍率', always: true },
+                { title: '输出倍率', always: true },
+                { title: '价格依据', always: true },
+                { title: '状态', always: true },
+                { title: '操作', always: false }
+            ];
+
+            thead.innerHTML = columns
+                .filter(col => col.always || (currentUser === 'wood'))
+                .map(col => \`<th>\${col.title}</th>\`)
+                .join('');
+        }
+
+        // 修改加载价格数据函数
+        function loadPrices() {
+            const priceTable = document.getElementById('priceTable');
+            const tbody = priceTable?.querySelector('tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
+
+            fetch('/api/prices')
+                .then(response => response.json())
+                .then((data: Price[]) => {
+                    tbody.innerHTML = '';
+                    
+                    if (!data || !Array.isArray(data)) {
+                        tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败</td></tr>';
+                        return;
+                    }
+
+                    data.forEach((price: Price) => {
+                        const tr = document.createElement('tr');
+                        const safePrice: Price = {
+                            ...price,
+                            input_ratio: price.input_ratio || 1,
+                            output_ratio: price.output_ratio || 1,
+                            status: price.status || 'pending'
+                        };
+                        
+                        const vendorData = vendors[String(safePrice.channel_type)];
+                        const currentUser = localStorage.getItem('username');
+                        
+                        // 创建单元格
+                        const modelCell = document.createElement('td');
+                        modelCell.textContent = safePrice.model;
+
+                        const billingTypeCell = document.createElement('td');
+                        const billingTypeBadge = document.createElement('span');
+                        billingTypeBadge.className = \`badge badge-\${safePrice.billing_type}\`;
+                        billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
+                        billingTypeCell.appendChild(billingTypeBadge);
+
+                        const vendorCell = document.createElement('td');
+                        if (vendorData) {
+                            const vendorIcon = document.createElement('img');
+                            vendorIcon.src = vendorData.icon;
+                            vendorIcon.className = 'vendor-icon';
+                            vendorIcon.alt = vendorData.name;
+                            vendorIcon.onerror = () => { vendorIcon.style.display = 'none'; };
+                            vendorCell.appendChild(vendorIcon);
+                            vendorCell.appendChild(document.createTextNode(vendorData.name));
+                        } else {
+                            vendorCell.textContent = '未知供应商';
+                        }
+
+                        const currencyCell = document.createElement('td');
+                        currencyCell.textContent = safePrice.currency;
+
+                        const inputPriceCell = document.createElement('td');
+                        inputPriceCell.textContent = String(safePrice.input_price);
+
+                        const outputPriceCell = document.createElement('td');
+                        outputPriceCell.textContent = String(safePrice.output_price);
+
+                        const inputRatioCell = document.createElement('td');
+                        inputRatioCell.textContent = safePrice.input_ratio.toFixed(4);
+
+                        const outputRatioCell = document.createElement('td');
+                        outputRatioCell.textContent = safePrice.output_ratio.toFixed(4);
+
+                        const sourceCell = document.createElement('td');
+                        const sourceLink = document.createElement('a');
+                        sourceLink.href = safePrice.price_source;
+                        sourceLink.className = 'source-link';
+                        sourceLink.target = '_blank';
+                        sourceLink.textContent = '查看来源';
+                        sourceCell.appendChild(sourceLink);
+
+                        const statusCell = document.createElement('td');
+                        const statusBadge = document.createElement('span');
+                        statusBadge.className = \`badge badge-\${safePrice.status}\`;
+                        statusBadge.textContent = getStatusText(safePrice.status);
+                        statusCell.appendChild(statusBadge);
+
+                        // 添加所有单元格
+                        tr.appendChild(modelCell);
+                        tr.appendChild(billingTypeCell);
+                        tr.appendChild(vendorCell);
+                        tr.appendChild(currencyCell);
+                        tr.appendChild(inputPriceCell);
+                        tr.appendChild(outputPriceCell);
+                        tr.appendChild(inputRatioCell);
+                        tr.appendChild(outputRatioCell);
+                        tr.appendChild(sourceCell);
+                        tr.appendChild(statusCell);
+
+                        // 只有管理员才添加操作列
+                        if (currentUser === 'wood' && safePrice.status === 'pending') {
+                            const operationCell = document.createElement('td');
+                            
+                            const approveButton = document.createElement('button');
+                            approveButton.className = 'btn btn-success btn-sm';
+                            approveButton.textContent = '通过';
+                            approveButton.onclick = () => reviewPrice(safePrice.id || '', 'approved');
+                            
+                            const rejectButton = document.createElement('button');
+                            rejectButton.className = 'btn btn-danger btn-sm';
+                            rejectButton.textContent = '拒绝';
+                            rejectButton.onclick = () => reviewPrice(safePrice.id || '', 'rejected');
+                            
+                            operationCell.appendChild(approveButton);
+                            operationCell.appendChild(rejectButton);
+                            tr.appendChild(operationCell);
+                        }
+
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(error => {
+                    console.error('加载价格数据失败:', error);
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败</td></tr>';
                 });
-            } catch (error) {
-                console.error('加载价格数据失败:', error);
-                const tbody = document.getElementById('priceTable');
-                tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">加载数据失败</td></tr>';
-            }
         }
 
         // 提交新价格
@@ -561,13 +730,20 @@ const html = `<!DOCTYPE html>
             }
         }
 
+        // 修改状态显示文本
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return '待审核';
+                case 'approved': return '已通过';
+                case 'rejected': return '已拒绝';
+                default: return status;
+            }
+        }
+
         init();
     </script>
 </body>
 </html>`;
-
-// 使用 Deno KV 存储数据
-const kv = await Deno.openKv();
 
 // 读取价格数据
 async function readPrices(): Promise<Price[]> {
@@ -859,6 +1035,8 @@ async function handler(req: Request): Promise<Response> {
                 throw new Error("不支持的内容类型");
             }
 
+            console.log('接收到的数据:', rawData); // 添加日志
+
             // 处理数据
             const newPrice: Price = {
                 model: String(rawData.model).trim(),
@@ -874,6 +1052,8 @@ async function handler(req: Request): Promise<Response> {
                 created_by: username,
                 created_at: new Date().toISOString()
             };
+
+            console.log('处理后的数据:', newPrice); // 添加日志
 
             // 验证数据
             const error = validatePrice(newPrice);
@@ -909,7 +1089,7 @@ async function handler(req: Request): Promise<Response> {
                 }
             });
         } catch (error) {
-            console.error("Processing error:", error);
+            console.error("处理价格提交失败:", error);
             return new Response(JSON.stringify({ 
                 error: error.message,
                 details: "数据处理失败，请检查输入格式"
