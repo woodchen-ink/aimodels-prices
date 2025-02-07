@@ -595,9 +595,13 @@ const html = `<!DOCTYPE html>
                         const tr = document.createElement('tr');
                         const safePrice = {
                             ...price,
-                            input_ratio: price.input_ratio || 1,
-                            output_ratio: price.output_ratio || 1,
-                            status: price.status || 'pending'
+                            type: price.type || price.billing_type || 'tokens',
+                            input: price.input || price.input_price || 0,
+                            output: price.output || price.output_price || 0,
+                            input_ratio: price.input_ratio || calculateRatio(price.input || price.input_price || 0, price.currency || 'USD'),
+                            output_ratio: price.output_ratio || calculateRatio(price.output || price.output_price || 0, price.currency || 'USD'),
+                            status: price.status || 'pending',
+                            currency: price.currency || 'USD'
                         };
                         
                         console.log('Processing price record', index + 1, ':', safePrice);
@@ -608,8 +612,8 @@ const html = `<!DOCTYPE html>
 
                         const billingTypeCell = document.createElement('td');
                         const billingTypeBadge = document.createElement('span');
-                        billingTypeBadge.className = 'badge badge-' + safePrice.billing_type;
-                        billingTypeBadge.textContent = safePrice.billing_type === 'tokens' ? '按量计费' : '按次计费';
+                        billingTypeBadge.className = 'badge badge-' + safePrice.type;
+                        billingTypeBadge.textContent = safePrice.type === 'tokens' ? '按量计费' : '按次计费';
                         billingTypeCell.appendChild(billingTypeBadge);
 
                         const vendorCell = document.createElement('td');
@@ -630,10 +634,10 @@ const html = `<!DOCTYPE html>
                         currencyCell.textContent = safePrice.currency;
 
                         const inputPriceCell = document.createElement('td');
-                        inputPriceCell.textContent = String(safePrice.input_price);
+                        inputPriceCell.textContent = safePrice.input.toFixed(4);
 
                         const outputPriceCell = document.createElement('td');
-                        outputPriceCell.textContent = String(safePrice.output_price);
+                        outputPriceCell.textContent = safePrice.output.toFixed(4);
 
                         const inputRatioCell = document.createElement('td');
                         inputRatioCell.textContent = safePrice.input_ratio.toFixed(4);
@@ -729,24 +733,36 @@ const html = `<!DOCTYPE html>
 
         // 修改审核价格函数
         async function reviewPrice(id, status) {
+            if (!id) {
+                console.error('无效的价格ID');
+                showToast('审核失败：无效的价格ID', 'danger');
+                return;
+            }
+
             try {
+                console.log('Reviewing price:', id, status);
                 const response = await fetch(API_BASE_URL + '/api/prices/' + id + '/review', {
                     method: 'POST',
                     credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ status })
                 });
                 
+                console.log('Review response:', response.status);
+                
                 if (response.ok) {
                     showToast('审核成功', 'success');
-                    loadPrices();
+                    await loadPrices();
                 } else {
-                    const error = await response.json();
+                    const error = await response.json().catch(() => ({ message: '审核失败' }));
                     showToast(error.message || '审核失败', 'danger');
                 }
             } catch (error) {
                 console.error('审核价格失败:', error);
-                showToast('审核失败', 'danger');
+                showToast('审核失败: ' + error.message, 'danger');
             }
         }
 
