@@ -534,7 +534,7 @@ const html = `<!DOCTYPE html>
 
             fetch('/api/prices')
                 .then(response => response.json())
-                .then((data: Price[]) => {
+                .then(data => {
                     tbody.innerHTML = '';
                     
                     if (!data || !Array.isArray(data)) {
@@ -542,9 +542,9 @@ const html = `<!DOCTYPE html>
                         return;
                     }
 
-                    data.forEach((price: Price) => {
+                    data.forEach(price => {
                         const tr = document.createElement('tr');
-                        const safePrice: Price = {
+                        const safePrice = {
                             ...price,
                             input_ratio: price.input_ratio || 1,
                             output_ratio: price.output_ratio || 1,
