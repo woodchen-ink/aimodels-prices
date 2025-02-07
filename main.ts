@@ -454,12 +454,11 @@ const html = `<!DOCTYPE html>
     <script>
         let currentUser = null;
         let vendors = null;
-        const BASE_URL = window.location.origin;
 
         // 检查登录状态
         async function checkLoginStatus() {
             try {
-                const response = await fetch(`${BASE_URL}/api/auth/status`, {
+                const response = await fetch('/api/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
@@ -544,12 +543,12 @@ const html = `<!DOCTYPE html>
 
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载中...</td></tr>';
 
-            fetch(`${BASE_URL}/api/prices`, {
+            fetch('/api/prices', {
                 credentials: 'include'
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        throw new Error('HTTP error! status: ' + response.status);
                     }
                     return response.json();
                 })
@@ -661,7 +660,7 @@ const html = `<!DOCTYPE html>
                 })
                 .catch(error => {
                     console.error('加载价格数据失败:', error);
-                    tbody.innerHTML = `<tr><td colspan="11" class="text-center">加载失败: ${error.message}</td></tr>`;
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center">加载失败: ' + error.message + '</tr>';
                     showToast('加载价格数据失败', 'danger');
                 });
         }
@@ -673,7 +672,7 @@ const html = `<!DOCTYPE html>
             const data = Object.fromEntries(formData.entries());
             
             try {
-                const response = await fetch(`${BASE_URL}/api/prices`, {
+                const response = await fetch('/api/prices', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -697,7 +696,7 @@ const html = `<!DOCTYPE html>
         // 修改审核价格函数
         async function reviewPrice(id, status) {
             try {
-                const response = await fetch(`${BASE_URL}/api/prices/${id}/review`, {
+                const response = await fetch('/api/prices/' + id + '/review', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -737,14 +736,14 @@ const html = `<!DOCTYPE html>
 
         // 修改登录函数
         function login() {
-            const returnUrl = `${BASE_URL}/auth/callback`;
-            window.location.href = `${BASE_URL}/api/auth/login?return_url=${encodeURIComponent(returnUrl)}`;
+            const returnUrl = window.location.origin + '/auth/callback';
+            window.location.href = '/api/auth/login?return_url=' + encodeURIComponent(returnUrl);
         }
 
         // 修改登出函数
         async function logout() {
             try {
-                await fetch(`${BASE_URL}/api/auth/logout`, { 
+                await fetch('/api/auth/logout', { 
                     method: 'POST',
                     credentials: 'include'
                 });
