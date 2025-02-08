@@ -117,7 +117,7 @@ func Login(c *gin.Context) {
 	// 构建 payload
 	payload := url.Values{}
 	payload.Set("nonce", nonceStr)
-	payload.Set("return_sso_url", fmt.Sprintf("%s/api/auth/callback", c.Request.Host))
+	payload.Set("return_sso_url", fmt.Sprintf("https://aimodels-prices.q58.pro/api/auth/callback"))
 
 	// Base64 编码
 	payloadStr := base64.StdEncoding.EncodeToString([]byte(payload.Encode()))
