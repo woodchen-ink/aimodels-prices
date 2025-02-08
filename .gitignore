@@ -4,6 +4,7 @@ kaifa.md
 .env
 .env.local
 .env.*.local
+wrangler.toml
 
 # 系统文件
 .DS_Store
