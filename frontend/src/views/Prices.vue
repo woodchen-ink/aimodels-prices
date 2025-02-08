@@ -126,12 +126,7 @@
             {{ row.output_price === 0 ? '免费' : calculateRate(row.output_price, row.currency) }}
           </template>
         </el-table-column>
-        <el-table-column label="创建者" width="110">
-          <template #default="{ row }">
-            <span class="creator-name">{{ row.created_by }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAdmin" width="180">
+        <el-table-column width="180">
           <template #default="{ row }">
             <el-popover
               placement="left"
@@ -142,6 +137,10 @@
                 <el-button link type="primary">详情</el-button>
               </template>
               <div class="price-detail">
+                <div class="detail-item">
+                  <span class="detail-label">创建者:</span>
+                  <span class="detail-value">{{ row.created_by }}</span>
+                </div>
                 <div class="detail-item">
                   <span class="detail-label">价格来源:</span>
                   <div class="detail-value">
@@ -159,7 +158,7 @@
             </el-popover>
           </template>
         </el-table-column>
-        <el-table-column v-if="isAdmin" label="操作" width="200">
+        <el-table-column v-if="isAdmin" label="操作">
           <template #default="{ row }">
             <el-button-group>
               <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
@@ -637,16 +636,14 @@ const handleImport = () => {
 
   const lines = importText.value.trim().split('\n')
   const newRows = lines.map(line => {
-    // 使用正则表达式匹配，考虑引号内的内容作为整体
-    const matches = line.trim().match(/("[^"]+"|[^\s]+)/g)
-    if (!matches || matches.length < 6) {
+    // 使用正则表达式匹配制表符或多个空格作为分隔符
+    const parts = line.trim().split(/\t+|\s{2,}/)
+    if (!parts || parts.length < 6) {
       ElMessage.warning(`行格式不正确：${line}`)
       return null
     }
 
-    const [model, billingType, providerNameRaw, currency, inputPrice, outputPrice] = matches
-    // 去除可能存在的引号
-    const providerName = providerNameRaw.replace(/^"|"$/g, '')
+    const [model, billingType, providerName, currency, inputPrice, outputPrice] = parts
     
     // 查找模型厂商ID
     const provider = providers.value.find(p => p.name === providerName)
@@ -672,7 +669,7 @@ const handleImport = () => {
     }
 
     return {
-      model: model.replace(/^"|"$/g, ''),
+      model,
       billing_type,
       channel_type: provider.id.toString(),
       currency: currencyCode,
