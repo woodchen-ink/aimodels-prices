@@ -94,7 +94,7 @@ func Login(c *gin.Context) {
 		}
 
 		// 设置cookie
-		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "", false, true)
+		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.pro", true, true)
 		c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
 		return
 	}
@@ -134,7 +134,7 @@ func Login(c *gin.Context) {
 	sig := hex.EncodeToString(h.Sum(nil))
 
 	// 构建重定向 URL
-	redirectURL := fmt.Sprintf("%s/session/sso_provider?sso=%s&sig=%s",
+	redirectURL := fmt.Sprintf("%s/session/sso?sso=%s&sig=%s",
 		discourseURL, url.QueryEscape(payloadStr), sig)
 
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -147,7 +147,7 @@ func Logout(c *gin.Context) {
 		db.Exec("DELETE FROM session WHERE id = ?", cookie)
 	}
 
-	c.SetCookie("session", "", -1, "/", "", false, true)
+	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.pro", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
@@ -284,8 +284,8 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 设置 cookie
-	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "", false, true)
+	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.pro", true, true)
 
 	// 重定向到前端
-	c.Redirect(http.StatusTemporaryRedirect, "/")
+	c.Redirect(http.StatusTemporaryRedirect, "https://aimodels-prices.q58.pro")
 }
