@@ -6,7 +6,10 @@
           <div class="header-left">
             <span>价格列表</span>
           </div>
-          <el-button type="primary" @click="handleAdd">提交价格</el-button>
+          <div class="header-buttons">
+            <el-button type="primary" @click="handleBatchAdd">批量添加</el-button>
+            <el-button type="primary" @click="handleAdd">提交价格</el-button>
+          </div>
         </div>
       </template>
 
@@ -38,27 +41,27 @@
       <el-table :data="filteredPrices" style="width: 100%">
         <el-table-column label="模型">
           <template #default="{ row }">
-            <div>
-              <div>{{ row.model }}</div>
-              <div v-if="row.temp_model" class="pending-update">
+            <div class="value-container">
+              <span>{{ row.model }}</span>
+              <el-tag v-if="row.temp_model" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_model }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="计费类型">
           <template #default="{ row }">
-            <div>
-              <div>{{ getBillingType(row.billing_type) }}</div>
-              <div v-if="row.temp_billing_type" class="pending-update">
+            <div class="value-container">
+              <span>{{ getBillingType(row.billing_type) }}</span>
+              <el-tag v-if="row.temp_billing_type" type="warning" size="small" effect="light">
                 待审核: {{ getBillingType(row.temp_billing_type) }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="模型厂商">
           <template #default="{ row }">
-            <div>
+            <div class="value-container">
               <div style="display: flex; align-items: center; gap: 8px">
                 <el-image 
                   v-if="getProvider(row.channel_type)?.icon"
@@ -67,39 +70,39 @@
                 />
                 <span>{{ getProvider(row.channel_type)?.name || row.channel_type }}</span>
               </div>
-              <div v-if="row.temp_channel_type" class="pending-update">
+              <el-tag v-if="row.temp_channel_type" type="warning" size="small" effect="light">
                 待审核: {{ getProvider(row.temp_channel_type)?.name || row.temp_channel_type }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="货币">
           <template #default="{ row }">
-            <div>
-              <div>{{ row.currency }}</div>
-              <div v-if="row.temp_currency" class="pending-update">
+            <div class="value-container">
+              <span>{{ row.currency }}</span>
+              <el-tag v-if="row.temp_currency" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_currency }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="输入价格(M)">
           <template #default="{ row }">
-            <div>
-              <div>{{ row.input_price }}</div>
-              <div v-if="row.temp_input_price !== null" class="pending-update">
+            <div class="value-container">
+              <span>{{ row.input_price }}</span>
+              <el-tag v-if="row.temp_input_price" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_input_price }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="输出价格(M)">
           <template #default="{ row }">
-            <div>
-              <div>{{ row.output_price }}</div>
-              <div v-if="row.temp_output_price !== null" class="pending-update">
+            <div class="value-container">
+              <span>{{ row.output_price }}</span>
+              <el-tag v-if="row.temp_output_price" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_output_price }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
@@ -115,11 +118,11 @@
         </el-table-column>
         <el-table-column label="价格来源">
           <template #default="{ row }">
-            <div>
-              <div>{{ row.price_source }}</div>
-              <div v-if="row.temp_price_source" class="pending-update">
+            <div class="value-container">
+              <span>{{ row.price_source }}</span>
+              <el-tag v-if="row.temp_price_source" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_price_source }}
-              </div>
+              </el-tag>
             </div>
           </template>
         </el-table-column>
@@ -142,6 +145,90 @@
       </el-table>
     </el-card>
 
+    <!-- 批量添加对话框 -->
+    <el-dialog v-model="batchDialogVisible" title="批量添加模型价格" width="90%">
+      <div class="batch-add-container">
+        <div class="batch-toolbar">
+          <el-button type="primary" @click="addRow">添加行</el-button>
+          <el-button type="danger" @click="removeSelectedRows" :disabled="!selectedRows.length">删除选中行</el-button>
+        </div>
+        <el-table
+          :data="batchForms"
+          style="width: 100%"
+          @selection-change="handleSelectionChange"
+          height="400"
+        >
+          <el-table-column type="selection" width="55" />
+          <el-table-column label="模型" width="200">
+            <template #default="{ row }">
+              <el-input v-model="row.model" placeholder="请输入模型名称" />
+            </template>
+          </el-table-column>
+          <el-table-column label="计费类型" width="150">
+            <template #default="{ row }">
+              <el-select v-model="row.billing_type" placeholder="请选择">
+                <el-option label="按量计费" value="tokens" />
+                <el-option label="按次计费" value="times" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="模型厂商" width="200">
+            <template #default="{ row }">
+              <el-select v-model="row.channel_type" placeholder="请选择">
+                <el-option
+                  v-for="provider in providers"
+                  :key="provider.id"
+                  :label="provider.name"
+                  :value="provider.id.toString()"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <el-image
+                      v-if="provider.icon"
+                      :src="provider.icon"
+                      style="width: 24px; height: 24px"
+                    />
+                    <span>{{ provider.name }}</span>
+                  </div>
+                </el-option>
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="货币" width="120">
+            <template #default="{ row }">
+              <el-select v-model="row.currency" placeholder="请选择">
+                <el-option label="美元" value="USD" />
+                <el-option label="人民币" value="CNY" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="输入价格(M)" width="150">
+            <template #default="{ row }">
+              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" />
+            </template>
+          </el-table-column>
+          <el-table-column label="输出价格(M)" width="150">
+            <template #default="{ row }">
+              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" />
+            </template>
+          </el-table-column>
+          <el-table-column label="价格来源">
+            <template #default="{ row }">
+              <el-input v-model="row.price_source" placeholder="请输入价格来源" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="batchDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitBatchForms" :loading="batchSubmitting">
+            {{ batchSubmitting ? '提交中...' : '确定' }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 现有的单个添加对话框 -->
     <el-dialog v-model="dialogVisible" title="提交价格">
       <el-form :model="form" label-width="120px">
         <el-form-item label="模型">
@@ -401,6 +488,91 @@ const updateStatus = async (id, status) => {
   }
 }
 
+// 批量添加相关的状态
+const batchDialogVisible = ref(false)
+const batchForms = ref([])
+const selectedRows = ref([])
+const batchSubmitting = ref(false)
+
+// 创建新行的默认数据
+const createNewRow = () => ({
+  model: '',
+  billing_type: 'tokens',
+  channel_type: '',
+  currency: 'USD',
+  input_price: 0,
+  output_price: 0,
+  price_source: '',
+  created_by: props.user?.username || ''
+})
+
+// 添加新行
+const addRow = () => {
+  batchForms.value.push(createNewRow())
+}
+
+// 处理选择变化
+const handleSelectionChange = (rows) => {
+  selectedRows.value = rows
+}
+
+// 删除选中的行
+const removeSelectedRows = () => {
+  const selectedIds = new Set(selectedRows.value.map(row => batchForms.value.indexOf(row)))
+  batchForms.value = batchForms.value.filter((_, index) => !selectedIds.has(index))
+  selectedRows.value = []
+}
+
+// 打开批量添加对话框
+const handleBatchAdd = () => {
+  if (!props.user) {
+    router.push('/login')
+    ElMessage.warning('请先登录')
+    return
+  }
+  batchForms.value = [createNewRow()]
+  batchDialogVisible.value = true
+}
+
+// 提交批量表单
+const submitBatchForms = async () => {
+  if (!batchForms.value.length) {
+    ElMessage.warning('请至少添加一条数据')
+    return
+  }
+
+  // 验证数据
+  const invalidForms = batchForms.value.filter(form => 
+    !form.model || !form.channel_type || !form.price_source
+  )
+  
+  if (invalidForms.length) {
+    ElMessage.error('请填写完整所有必填字段')
+    return
+  }
+
+  batchSubmitting.value = true
+  try {
+    // 逐个提交数据
+    for (const form of batchForms.value) {
+      await axios.post('/api/prices', form)
+    }
+    
+    await loadPrices()
+    batchDialogVisible.value = false
+    ElMessage.success('批量添加成功')
+  } catch (error) {
+    console.error('Failed to submit batch prices:', error)
+    if (error.response?.data?.error) {
+      ElMessage.error(error.response.data.error)
+    } else {
+      ElMessage.error('批量添加失败')
+    }
+  } finally {
+    batchSubmitting.value = false
+  }
+}
+
 onMounted(async () => {
   await loadPrices()
   try {
@@ -472,12 +644,43 @@ onMounted(async () => {
   padding-right: 0;
 }
 
-.pending-update {
-  font-size: 12px;
-  color: #E6A23C;
-  margin-top: 4px;
-  padding: 2px 4px;
-  background-color: #FDF6EC;
-  border-radius: 2px;
+.value-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.value-container :deep(.el-tag) {
+  margin: 0;
+  width: fit-content;
+}
+
+.value-container span {
+  word-break: break-all;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.batch-add-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.batch-toolbar {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+:deep(.el-input-number) {
+  width: 100%;
+}
+
+:deep(.el-select) {
+  width: 100%;
 }
 </style> 
