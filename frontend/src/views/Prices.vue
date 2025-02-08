@@ -126,7 +126,7 @@
             {{ row.output_price === 0 ? '免费' : calculateRate(row.output_price, row.currency) }}
           </template>
         </el-table-column>
-        <el-table-column width="180">
+        <el-table-column width="80">
           <template #default="{ row }">
             <el-popover
               placement="left"
