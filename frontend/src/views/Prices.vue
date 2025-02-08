@@ -7,6 +7,11 @@
             <span>价格列表</span>
           </div>
           <div class="header-buttons">
+            <template v-if="isAdmin && selectedPrices.length > 0">
+              <el-button type="success" @click="batchUpdateStatus('approved')">批量通过</el-button>
+              <el-button type="danger" @click="batchUpdateStatus('rejected')">批量拒绝</el-button>
+              <el-divider direction="vertical" />
+            </template>
             <el-button type="primary" @click="handleBatchAdd">批量添加</el-button>
             <el-button type="primary" @click="handleAdd">提交价格</el-button>
           </div>
@@ -38,7 +43,12 @@
         </div>
       </div>
 
-      <el-table :data="filteredPrices" style="width: 100%">
+      <el-table 
+        :data="filteredPrices" 
+        style="width: 100%"
+        @selection-change="handlePriceSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
         <el-table-column label="模型">
           <template #default="{ row }">
             <div class="value-container">
@@ -49,7 +59,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="计费类型">
+        <el-table-column label="计费类型" width="120">
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ getBillingType(row.billing_type) }}</span>
@@ -59,7 +69,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="模型厂商">
+        <el-table-column label="模型厂商" width="180">
           <template #default="{ row }">
             <div class="value-container">
               <div style="display: flex; align-items: center; gap: 8px">
@@ -76,7 +86,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="货币">
+        <el-table-column label="货币" width="80">
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.currency }}</span>
@@ -86,52 +96,69 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="输入价格(M)">
+        <el-table-column label="输入价格(M)" width="120">
           <template #default="{ row }">
             <div class="value-container">
-              <span>{{ row.input_price }}</span>
-              <el-tag v-if="row.temp_input_price" type="warning" size="small" effect="light">
-                待审核: {{ row.temp_input_price }}
+              <span>{{ row.input_price === 0 ? '免费' : row.input_price }}</span>
+              <el-tag v-if="row.temp_input_price !== null && row.temp_input_price !== undefined" type="warning" size="small" effect="light">
+                待审核: {{ row.temp_input_price === 0 ? '免费' : row.temp_input_price }}
               </el-tag>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="输出价格(M)">
+        <el-table-column label="输出价格(M)" width="120">
           <template #default="{ row }">
             <div class="value-container">
-              <span>{{ row.output_price }}</span>
-              <el-tag v-if="row.temp_output_price" type="warning" size="small" effect="light">
-                待审核: {{ row.temp_output_price }}
+              <span>{{ row.output_price === 0 ? '免费' : row.output_price }}</span>
+              <el-tag v-if="row.temp_output_price !== null && row.temp_output_price !== undefined" type="warning" size="small" effect="light">
+                待审核: {{ row.temp_output_price === 0 ? '免费' : row.temp_output_price }}
               </el-tag>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="输入倍率">
+        <el-table-column label="输入倍率" width="120">
           <template #default="{ row }">
-            {{ calculateRate(row.input_price, row.currency) }}
+            {{ row.input_price === 0 ? '免费' : calculateRate(row.input_price, row.currency) }}
           </template>
         </el-table-column>
-        <el-table-column label="输出倍率">
+        <el-table-column label="输出倍率" width="120">
           <template #default="{ row }">
-            {{ calculateRate(row.output_price, row.currency) }}
+            {{ row.output_price === 0 ? '免费' : calculateRate(row.output_price, row.currency) }}
           </template>
         </el-table-column>
-        <el-table-column label="价格来源">
+        <el-table-column label="创建者" width="110">
           <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ row.price_source }}</span>
-              <el-tag v-if="row.temp_price_source" type="warning" size="small" effect="light">
-                待审核: {{ row.temp_price_source }}
-              </el-tag>
-            </div>
+            <span class="creator-name">{{ row.created_by }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态">
+        <el-table-column v-if="isAdmin" width="180">
           <template #default="{ row }">
-            {{ getStatus(row.status) }}
+            <el-popover
+              placement="left"
+              :width="200"
+              trigger="hover"
+            >
+              <template #reference>
+                <el-button link type="primary">详情</el-button>
+              </template>
+              <div class="price-detail">
+                <div class="detail-item">
+                  <span class="detail-label">价格来源:</span>
+                  <div class="detail-value">
+                    <span>{{ row.price_source }}</span>
+                    <el-tag v-if="row.temp_price_source !== null && row.temp_price_source !== undefined" type="warning" size="small" effect="light">
+                      待审核: {{ row.temp_price_source }}
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">状态:</span>
+                  <span class="detail-value">{{ getStatus(row.status) }}</span>
+                </div>
+              </div>
+            </el-popover>
           </template>
         </el-table-column>
-        <el-table-column prop="created_by" label="创建者" />
         <el-table-column v-if="isAdmin" label="操作" width="200">
           <template #default="{ row }">
             <el-button-group>
@@ -610,7 +637,16 @@ const handleImport = () => {
 
   const lines = importText.value.trim().split('\n')
   const newRows = lines.map(line => {
-    const [model, billingType, providerName, currency, inputPrice, outputPrice] = line.trim().split(/\s+/)
+    // 使用正则表达式匹配，考虑引号内的内容作为整体
+    const matches = line.trim().match(/("[^"]+"|[^\s]+)/g)
+    if (!matches || matches.length < 6) {
+      ElMessage.warning(`行格式不正确：${line}`)
+      return null
+    }
+
+    const [model, billingType, providerNameRaw, currency, inputPrice, outputPrice] = matches
+    // 去除可能存在的引号
+    const providerName = providerNameRaw.replace(/^"|"$/g, '')
     
     // 查找模型厂商ID
     const provider = providers.value.find(p => p.name === providerName)
@@ -636,7 +672,7 @@ const handleImport = () => {
     }
 
     return {
-      model,
+      model: model.replace(/^"|"$/g, ''),
       billing_type,
       channel_type: provider.id.toString(),
       currency: currencyCode,
@@ -651,6 +687,51 @@ const handleImport = () => {
     batchForms.value = [...batchForms.value, ...newRows]
     importText.value = ''
     ElMessage.success(`成功导入 ${newRows.length} 条数据`)
+  }
+}
+
+const selectedPrices = ref([])
+
+const handlePriceSelectionChange = (selection) => {
+  selectedPrices.value = selection
+}
+
+const batchUpdateStatus = async (status) => {
+  if (!selectedPrices.value.length) {
+    ElMessage.warning('请先选择要审核的价格')
+    return
+  }
+
+  // 过滤出待审核的价格
+  const pendingPrices = selectedPrices.value.filter(price => price.status === 'pending')
+  if (!pendingPrices.length) {
+    ElMessage.warning('选中的价格中没有待审核的项目')
+    return
+  }
+
+  try {
+    // 确认操作
+    await ElMessageBox.confirm(
+      `确定要${status === 'approved' ? '通过' : '拒绝'}选中的 ${pendingPrices.length} 条待审核价格吗？`,
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: status === 'approved' ? 'success' : 'warning'
+      }
+    )
+
+    // 批量更新状态
+    for (const price of pendingPrices) {
+      await axios.put(`/api/prices/${price.id}/status`, { status })
+    }
+
+    await loadPrices()
+    ElMessage.success('批量审核成功')
+  } catch (error) {
+    if (error === 'cancel') return
+    console.error('Failed to batch update status:', error)
+    ElMessage.error('批量审核失败')
   }
 }
 
@@ -790,5 +871,36 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+.price-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  color: #909399;
+  font-size: 13px;
+}
+
+.detail-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.creator-name {
+  display: inline-block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style> 

@@ -9,13 +9,13 @@
       </template>
 
       <el-table :data="sortedProviders" style="width: 100%">
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="id" label="ID" />
         <el-table-column label="名称">
           <template #default="{ row }">
             {{ row.name }}
           </template>
         </el-table-column>
-        <el-table-column label="图标" width="100">
+        <el-table-column label="图标">
           <template #default="{ row }">
             <el-image 
               v-if="row.icon"
