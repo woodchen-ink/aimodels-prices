@@ -20,7 +20,7 @@
             </span>
             <el-button @click="handleLogout">退出</el-button>
           </template>
-          <el-button v-else type="primary" @click="$router.push('/login')">登录</el-button>
+          <el-button v-else type="primary" @click="handleLogin" :loading="loading">登录</el-button>
         </div>
       </div>
     </el-header>
@@ -46,16 +46,38 @@ import { ref, onMounted, provide } from 'vue'
 import { User } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 const globalUser = ref(null)
+const loading = ref(false)
 
 const updateGlobalUser = (user) => {
   globalUser.value = user
 }
 
 provide('updateGlobalUser', updateGlobalUser)
+
+const handleLogin = async () => {
+  loading.value = true
+  try {
+    const { data } = await axios.post('/api/auth/login')
+    if (data.auth_url) {
+      // 直接重定向到授权页面
+      window.location.href = data.auth_url
+    } else {
+      // 处理开发环境下的直接登录
+      const { data: userData } = await axios.get('/api/auth/status')
+      updateGlobalUser(userData.user)
+      ElMessage.success('登录成功')
+    }
+  } catch (error) {
+    console.error('Failed to login:', error)
+    ElMessage.error('登录失败')
+    loading.value = false
+  }
+}
 
 onMounted(async () => {
   try {

@@ -112,8 +112,10 @@ func Login(c *gin.Context) {
 		url.QueryEscape(clientID),
 		url.QueryEscape(redirectURI))
 
-	// 重定向到授权页面
-	c.Redirect(http.StatusTemporaryRedirect, authURL)
+	// 返回授权 URL 而不是直接重定向
+	c.JSON(http.StatusOK, gin.H{
+		"auth_url": authURL,
+	})
 }
 
 func Logout(c *gin.Context) {

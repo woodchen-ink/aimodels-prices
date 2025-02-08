@@ -24,15 +24,20 @@ const updateGlobalUser = inject('updateGlobalUser')
 const handleLogin = async () => {
   loading.value = true
   try {
-    await axios.post('/api/auth/login')
-    const { data } = await axios.get('/api/auth/status')
-    updateGlobalUser(data.user)
-    ElMessage.success('登录成功')
-    router.push('/prices')
+    const { data } = await axios.post('/api/auth/login')
+    if (data.auth_url) {
+      // 直接重定向到授权页面
+      window.location.href = data.auth_url
+    } else {
+      // 处理开发环境下的直接登录
+      const { data: userData } = await axios.get('/api/auth/status')
+      updateGlobalUser(userData.user)
+      ElMessage.success('登录成功')
+      router.push('/prices')
+    }
   } catch (error) {
     console.error('Failed to login:', error)
     ElMessage.error('登录失败')
-  } finally {
     loading.value = false
   }
 }
