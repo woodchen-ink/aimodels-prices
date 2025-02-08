@@ -8,7 +8,7 @@
           </router-link>
           <div class="nav-buttons">
             <el-button @click="$router.push('/prices')" :type="$route.path === '/prices' ? 'primary' : ''">价格列表</el-button>
-            <el-button @click="$router.push('/providers')" :type="$route.path === '/providers' ? 'primary' : ''">供应商列表</el-button>
+            <el-button @click="$router.push('/providers')" :type="$route.path === '/providers' ? 'primary' : ''">模型厂商</el-button>
           </div>
         </div>
         <div class="auth-buttons">

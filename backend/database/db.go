@@ -51,7 +51,7 @@ func createTables() error {
 		return err
 	}
 
-	// 创建供应商表
+	// 创建模型厂商表
 	if _, err := DB.Exec(models.CreateProviderTableSQL()); err != nil {
 		log.Printf("Failed to create provider table: %v", err)
 		return err

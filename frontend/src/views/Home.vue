@@ -8,11 +8,11 @@
       </template>
       <div class="content">
         <h2>项目简介</h2>
-        <p>这是一个专门用于管理AI模型价格的系统，支持多供应商、多币种的价格管理，并提供标准的API接口供其他系统调用。</p>
+        <p>这是一个专门用于管理AI模型价格的系统，支持多模型厂商、多币种的价格管理，并提供标准的API接口供其他系统调用。</p>
         
         <h2>主要功能</h2>
         <ul>
-          <li>供应商管理：添加、编辑和删除AI模型供应商</li>
+          <li>模型厂商管理：添加、编辑和删除AI模型模型厂商</li>
           <li>价格管理：设置和更新各个模型的价格</li>
           <li>多币种支持：支持USD和CNY两种货币</li>
           <li>审核流程：价格变更需要管理员审核</li>
@@ -47,7 +47,7 @@
               <ul>
                 <li>model: 模型名称</li>
                 <li>type: 计费类型（tokens/times）</li>
-                <li>channel_type: 供应商ID</li>
+                <li>channel_type: 模型厂商ID</li>
                 <li>input: 输入价格倍率</li>
                 <li>output: 输出价格倍率</li>
               </ul>
@@ -83,7 +83,7 @@
             </div>
           </el-collapse-item>
 
-          <el-collapse-item title="获取供应商列表">
+          <el-collapse-item title="获取模型厂商">
             <div class="api-doc">
               <div class="api-url">
                 <span class="method">GET</span>
@@ -93,7 +93,7 @@
                   </span>
                 </el-tooltip>
               </div>
-              <p>获取所有供应商信息</p>
+              <p>获取所有模型厂商信息</p>
               <h4>响应示例：</h4>
               <pre>
 [
@@ -219,7 +219,7 @@ onMounted(() => {
 // 添加页面元信息
 const meta = {
   title: 'AI模型价格 - 首页',
-  description: '专业的AI模型价格管理系统，支持多供应商、多币种的价格管理，提供标准的API接口。',
+  description: '专业的AI模型价格管理系统，支持多模型厂商、多币种的价格管理，提供标准的API接口。',
   keywords: 'AI模型,价格管理,API接口,OpenAI,Azure,Anthropic'
 }
 

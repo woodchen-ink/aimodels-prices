@@ -70,7 +70,7 @@ func main() {
 			prices.PUT("/:id/status", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdatePriceStatus)
 		}
 
-		// 供应商相关路由
+		// 模型厂商相关路由
 		providers := api.Group("/providers")
 		{
 			providers.GET("", handlers.GetProviders)

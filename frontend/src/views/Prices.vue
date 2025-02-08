@@ -151,6 +151,31 @@
         <div class="batch-toolbar">
           <el-button type="primary" @click="addRow">添加行</el-button>
           <el-button type="danger" @click="removeSelectedRows" :disabled="!selectedRows.length">删除选中行</el-button>
+          <el-divider direction="vertical" />
+          <el-popover
+            placement="bottom"
+            :width="400"
+            trigger="click"
+          >
+            <template #reference>
+              <el-button type="success">从表格导入</el-button>
+            </template>
+            <div class="import-popover">
+              <p class="import-tip">请粘贴表格数据（支持从Excel复制），每行格式为：</p>
+              <p class="import-format">模型名称 计费类型 厂商 货币 输入价格 输出价格</p>
+              <el-input
+                v-model="importText"
+                type="textarea"
+                :rows="8"
+                placeholder="例如：
+dall-e-2 按Token收费 OpenAI 美元 16.000000 16.000000
+dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
+              />
+              <div class="import-actions">
+                <el-button type="primary" @click="handleImport">导入</el-button>
+              </div>
+            </div>
+          </el-popover>
         </div>
         <el-table
           :data="batchForms"
@@ -573,6 +598,62 @@ const submitBatchForms = async () => {
   }
 }
 
+// 添加导入相关的状态
+const importText = ref('')
+
+// 处理导入
+const handleImport = () => {
+  if (!importText.value.trim()) {
+    ElMessage.warning('请先粘贴数据')
+    return
+  }
+
+  const lines = importText.value.trim().split('\n')
+  const newRows = lines.map(line => {
+    const [model, billingType, providerName, currency, inputPrice, outputPrice] = line.trim().split(/\s+/)
+    
+    // 查找模型厂商ID
+    const provider = providers.value.find(p => p.name === providerName)
+    if (!provider) {
+      ElMessage.warning(`未找到模型厂商：${providerName}`)
+      return null
+    }
+
+    // 处理计费类型
+    let billing_type = 'tokens'
+    if (billingType.includes('Token')) {
+      billing_type = 'tokens'
+    } else if (billingType.includes('次')) {
+      billing_type = 'times'
+    }
+
+    // 处理货币
+    let currencyCode = 'USD'
+    if (currency.includes('美元')) {
+      currencyCode = 'USD'
+    } else if (currency.includes('人民币') || currency.includes('CNY')) {
+      currencyCode = 'CNY'
+    }
+
+    return {
+      model,
+      billing_type,
+      channel_type: provider.id.toString(),
+      currency: currencyCode,
+      input_price: parseFloat(inputPrice),
+      output_price: parseFloat(outputPrice),
+      price_source: '官方',
+      created_by: props.user?.username || ''
+    }
+  }).filter(row => row !== null)
+
+  if (newRows.length > 0) {
+    batchForms.value = [...batchForms.value, ...newRows]
+    importText.value = ''
+    ElMessage.success(`成功导入 ${newRows.length} 条数据`)
+  }
+}
+
 onMounted(async () => {
   await loadPrices()
   try {
@@ -580,7 +661,7 @@ onMounted(async () => {
     providers.value = data
   } catch (error) {
     console.error('Failed to load providers:', error)
-    ElMessage.error('加载供应商数据失败')
+    ElMessage.error('加载模型厂商数据失败')
   }
 })
 </script>
@@ -682,5 +763,32 @@ onMounted(async () => {
 
 :deep(.el-select) {
   width: 100%;
+}
+
+.import-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-tip {
+  margin: 0;
+  color: #606266;
+  font-size: 14px;
+}
+
+.import-format {
+  margin: 0;
+  color: #409EFF;
+  font-size: 13px;
+  background-color: #ecf5ff;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
 </style> 

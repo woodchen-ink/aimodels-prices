@@ -11,7 +11,7 @@ type Provider struct {
 	CreatedBy string    `json:"created_by"`
 }
 
-// CreateProviderTableSQL 返回创建供应商表的 SQL
+// CreateProviderTableSQL 返回创建模型厂商表的 SQL
 func CreateProviderTableSQL() string {
 	return `
 	CREATE TABLE IF NOT EXISTS provider (

@@ -11,7 +11,7 @@ import (
 	"aimodels-prices/models"
 )
 
-// GetProviders 获取所有供应商
+// GetProviders 获取所有模型厂商
 func GetProviders(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
 	rows, err := db.Query(`
@@ -38,7 +38,7 @@ func GetProviders(c *gin.Context) {
 	c.JSON(http.StatusOK, providers)
 }
 
-// CreateProvider 创建供应商
+// CreateProvider 创建模型厂商
 func CreateProvider(c *gin.Context) {
 	var provider models.Provider
 	if err := c.ShouldBindJSON(&provider); err != nil {
@@ -80,7 +80,7 @@ func CreateProvider(c *gin.Context) {
 	c.JSON(http.StatusCreated, provider)
 }
 
-// UpdateProvider 更新供应商
+// UpdateProvider 更新模型厂商
 func UpdateProvider(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -106,7 +106,7 @@ func UpdateProvider(c *gin.Context) {
 		return
 	}
 
-	// 获取更新后的供应商信息
+	// 获取更新后的模型厂商信息
 	err = db.QueryRow(`
 		SELECT id, name, icon, created_at, updated_at, created_by
 		FROM provider WHERE id = ?`, id).Scan(
@@ -120,7 +120,7 @@ func UpdateProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, provider)
 }
 
-// UpdateProviderStatus 更新供应商状态
+// UpdateProviderStatus 更新模型厂商状态
 func UpdateProviderStatus(c *gin.Context) {
 	id := c.Param("id")
 	var input struct {
@@ -174,7 +174,7 @@ func UpdateProviderStatus(c *gin.Context) {
 	})
 }
 
-// DeleteProvider 删除供应商
+// DeleteProvider 删除模型厂商
 func DeleteProvider(c *gin.Context) {
 	id := c.Param("id")
 	db := c.MustGet("db").(*sql.DB)

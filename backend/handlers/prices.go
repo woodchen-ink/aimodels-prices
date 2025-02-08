@@ -49,7 +49,7 @@ func CreatePrice(c *gin.Context) {
 		return
 	}
 
-	// 验证供应商ID是否存在
+	// 验证模型厂商ID是否存在
 	db := c.MustGet("db").(*sql.DB)
 	var providerExists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM provider WHERE id = ?)", price.ChannelType).Scan(&providerExists)
@@ -157,7 +157,7 @@ func UpdatePrice(c *gin.Context) {
 		return
 	}
 
-	// 验证供应商ID是否存在
+	// 验证模型厂商ID是否存在
 	db := c.MustGet("db").(*sql.DB)
 	var providerExists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM provider WHERE id = ?)", price.ChannelType).Scan(&providerExists)

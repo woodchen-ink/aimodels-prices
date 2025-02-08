@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>供应商列表</span>
-          <el-button type="primary" @click="handleAdd">添加供应商</el-button>
+          <span>模型厂商</span>
+          <el-button type="primary" @click="handleAdd">添加模型厂商</el-button>
         </div>
       </template>
 
@@ -82,7 +82,7 @@ const router = useRouter()
 
 const isAdmin = computed(() => props.user?.role === 'admin')
 
-// 按ID排序的供应商列表
+// 按ID排序的模型厂商
 const sortedProviders = computed(() => {
   return [...providers.value].sort((a, b) => a.id - b.id)
 })
@@ -103,14 +103,14 @@ onMounted(() => {
 
 const dialogTitle = computed(() => {
   if (editingProvider.value) {
-    return '编辑供应商'
+    return '编辑模型厂商'
   }
-  return '添加供应商'
+  return '添加模型厂商'
 })
 
 const handleEdit = (provider) => {
   if (!isAdmin.value) {
-    ElMessage.warning('只有管理员可以编辑供应商信息')
+    ElMessage.warning('只有管理员可以编辑模型厂商信息')
     return
   }
   editingProvider.value = provider
@@ -120,12 +120,12 @@ const handleEdit = (provider) => {
 
 const handleDelete = (provider) => {
   if (!isAdmin.value) {
-    ElMessage.warning('只有管理员可以删除供应商')
+    ElMessage.warning('只有管理员可以删除模型厂商')
     return
   }
   
   ElMessageBox.confirm(
-    '确定要删除这个供应商吗？',
+    '确定要删除这个模型厂商吗？',
     '警告',
     {
       confirmButtonText: '确定',
@@ -162,10 +162,10 @@ const submitForm = async () => {
   try {
     if (editingProvider.value) {
       if (!isAdmin.value) {
-        ElMessage.error('只有管理员可以编辑供应商信息')
+        ElMessage.error('只有管理员可以编辑模型厂商信息')
         return
       }
-      // 管理员编辑供应商
+      // 管理员编辑模型厂商
       const { data } = await axios.put(`/api/providers/${editingProvider.value.id}`, form.value)
       if (data.error) {
         ElMessage.error(data.error)
@@ -177,7 +177,7 @@ const submitForm = async () => {
       }
       ElMessage.success('更新成功')
     } else {
-      // 创建新供应商
+      // 创建新模型厂商
       const { data } = await axios.post('/api/providers', form.value)
       if (data.error) {
         ElMessage.error(data.error)

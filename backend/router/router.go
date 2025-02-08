@@ -22,7 +22,7 @@ func SetupRouter() *gin.Engine {
 		auth.POST("/logout", handlers.Logout)
 	}
 
-	// 供应商相关路由
+	// 模型厂商相关路由
 	providers := r.Group("/providers")
 	{
 		providers.GET("", handlers.GetProviders)
