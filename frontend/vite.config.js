@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://aimodels-prices.q58.pro',
+        target: 'http://localhost:8080',
         changeOrigin: true
       }
     }
