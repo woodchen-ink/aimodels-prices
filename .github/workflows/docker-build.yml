@@ -25,11 +25,12 @@ jobs:
         with:
           go-version: '1.21'
 
-      # 构建后端
+      # 构建后端（使用 Alpine 环境）
       - name: Build backend
         run: |
           cd backend
-          go build -o main .
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main-amd64 .
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o main-arm64 .
 
       # 设置 Node.js 环境
       - name: Set up Node.js
@@ -51,28 +52,75 @@ jobs:
         run: |
           mkdir -p backend/config
           cat > backend/config/nginx.conf << 'EOL'
-          worker_processes auto;
+          user  nginx;
+          worker_processes  auto;
+          
+          error_log  /var/log/nginx/error.log notice;
+          pid        /var/run/nginx.pid;
+          
           events {
-              worker_connections 1024;
+              worker_connections  1024;
           }
+          
           http {
               include       /etc/nginx/mime.types;
               default_type  application/octet-stream;
+          
+              log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                               '$status $body_bytes_sent "$http_referer" '
+                               '"$http_user_agent" "$http_x_forwarded_for"';
+          
+              access_log  /var/log/nginx/access.log  main;
+          
               sendfile        on;
+              tcp_nopush      on;
+              tcp_nodelay     on;
+          
               keepalive_timeout  65;
+          
               gzip  on;
+              gzip_min_length 1k;
+              gzip_comp_level 6;
+              gzip_types text/plain text/css text/javascript application/json application/javascript application/x-javascript application/xml;
+              gzip_vary on;
+          
               server {
                   listen       80;
                   server_name  localhost;
-                  location / {
-                      root   /app/frontend;
-                      index  index.html;
-                      try_files $uri $uri/ /index.html;
+                  root         /app/frontend;
+                  index        index.html;
+          
+                  # 前端文件缓存设置
+                  location /assets {
+                      expires 7d;
+                      add_header Cache-Control "public, no-transform";
                   }
+          
+                  # API 反向代理
                   location /api {
-                      proxy_pass http://localhost:8080;
+                      proxy_pass http://127.0.0.1:8080;
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection 'upgrade';
                       proxy_set_header Host $host;
                       proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                      proxy_cache_bypass $http_upgrade;
+                      proxy_buffering off;
+                      proxy_read_timeout 300s;
+                  }
+          
+                  # SPA 路由支持
+                  location / {
+                      try_files $uri $uri/ /index.html;
+                      add_header Cache-Control "no-cache, no-store, must-revalidate";
+                  }
+          
+                  # 错误页面
+                  error_page   500 502 503 504  /50x.html;
+                  location = /50x.html {
+                      root   /usr/share/nginx/html;
                   }
               }
           }
@@ -115,12 +163,14 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max 
-      
-      - name: 部署到服务器
+          cache-to: type=gha,mode=max
+
+      # 部署到服务器
+      - name: Deploy to server
         uses: appleboy/ssh-action@master
+        if: github.event_name != 'pull_request'
         env:
-          DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          DOCKER_IMAGE: ${{ env.IMAGE_NAME }}
           PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -128,7 +178,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           envs: DOCKER_IMAGE,PROJECT_PATH
           script: |
-            docker pull $DOCKER_IMAGE
             cd $PROJECT_PATH
+            docker compose pull
             docker compose down
             docker compose up -d
