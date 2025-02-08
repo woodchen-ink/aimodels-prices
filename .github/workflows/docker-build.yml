@@ -19,6 +19,65 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 设置 Go 环境
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      # 构建后端
+      - name: Build backend
+        run: |
+          cd backend
+          go build -o main .
+
+      # 设置 Node.js 环境
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # 构建前端
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      # 创建 nginx 配置
+      - name: Create nginx config
+        run: |
+          mkdir -p backend/config
+          cat > backend/config/nginx.conf << 'EOL'
+          worker_processes auto;
+          events {
+              worker_connections 1024;
+          }
+          http {
+              include       /etc/nginx/mime.types;
+              default_type  application/octet-stream;
+              sendfile        on;
+              keepalive_timeout  65;
+              gzip  on;
+              server {
+                  listen       80;
+                  server_name  localhost;
+                  location / {
+                      root   /app/frontend;
+                      index  index.html;
+                      try_files $uri $uri/ /index.html;
+                  }
+                  location /api {
+                      proxy_pass http://localhost:8080;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                  }
+              }
+          }
+          EOL
+
       # 设置 QEMU 以支持多架构构建
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
