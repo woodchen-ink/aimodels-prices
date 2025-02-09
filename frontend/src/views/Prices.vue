@@ -51,14 +51,13 @@
       </template>
       
       <el-table 
-        v-else
-        :data="filteredPrices" 
+        :data="prices" 
         style="width: 100%"
         @selection-change="handlePriceSelectionChange"
         v-loading="tableLoading"
         element-loading-text="加载中..."
       >
-        <el-table-column type="selection" width="55" />
+        <el-table-column v-if="isAdmin" type="selection" width="55" />
         <el-table-column label="模型">
           <template #default="{ row }">
             <div class="value-container">
@@ -180,7 +179,7 @@
         </el-table-column>
       </el-table>
       
-      <!-- 添加分页 -->
+      <!-- 修改分页组件 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -188,9 +187,17 @@
           :page-sizes="[10, 20, 50, 100]"
           :total="total"
           layout="total, sizes, prev, pager, next"
+          :small="false"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
-        />
+          size-change-label="条/页"
+        >
+          <template #sizes>
+            <el-select v-model="pageSize" :options="[10, 20, 50, 100].map(item => ({ value: item, label: item + ' 条/页' }))">
+              <template #prefix>每页</template>
+            </el-select>
+          </template>
+        </el-pagination>
       </div>
     </el-card>
 
@@ -408,10 +415,7 @@ const calculateRate = (price, currency) => {
   return currency === 'USD' ? (price / 2).toFixed(4) : (price / 14).toFixed(4)
 }
 
-const filteredPrices = computed(() => {
-  if (!selectedProvider.value) return prices.value
-  return prices.value.filter(p => p.channel_type === selectedProvider.value)
-})
+const filteredPrices = computed(() => prices.value)
 
 const editingPrice = ref(null)
 
@@ -427,25 +431,20 @@ const cachedPrices = ref(new Map()) // 用于缓存数据
 const loadPrices = async () => {
   tableLoading.value = true
   
-  // 检查缓存
-  const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}`
-  if (cachedPrices.value.has(cacheKey)) {
-    const cached = cachedPrices.value.get(cacheKey)
-    prices.value = cached.prices
-    total.value = cached.total
-    tableLoading.value = false
-    loading.value = false
-    return
+  // 构建查询参数
+  const params = {
+    page: currentPage.value,
+    pageSize: pageSize.value
+  }
+  
+  // 添加厂商筛选参数
+  if (selectedProvider.value) {
+    params.channel_type = selectedProvider.value
   }
   
   try {
     const [pricesRes, providersRes] = await Promise.all([
-      axios.get('/api/prices', {
-        params: {
-          page: currentPage.value,
-          pageSize: pageSize.value
-        }
-      }),
+      axios.get('/api/prices', { params }),
       axios.get('/api/providers')
     ])
     
@@ -454,6 +453,7 @@ const loadPrices = async () => {
     providers.value = providersRes.data
     
     // 缓存数据
+    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.prices,
       total: pricesRes.data.total
@@ -815,9 +815,9 @@ const handleCurrentChange = (val) => {
   loadPrices()
 }
 
-// 当选择厂商时重置分页
+// 当选择厂商时重新加载数据
 watch(selectedProvider, () => {
-  currentPage.value = 1
+  currentPage.value = 1 // 重置到第一页
   loadPrices()
 })
 
@@ -1007,6 +1007,22 @@ onMounted(async () => {
 :deep(.el-table__body-wrapper) {
   .el-table__row {
     transition: all 0.3s ease;
+  }
+}
+
+/* 添加分页选择框样式 */
+:deep(.el-pagination) {
+  .el-select {
+    width: auto !important;
+    margin: 0 8px;
+  }
+  
+  .el-select .el-input {
+    width: 110px !important;
+  }
+  
+  .el-select-dropdown__item {
+    padding-right: 15px;
   }
 }
 </style> 

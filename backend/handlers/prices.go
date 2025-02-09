@@ -14,9 +14,11 @@ import (
 func GetPrices(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
 
-	// 获取分页参数
+	// 获取分页和筛选参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
+	channelType := c.Query("channel_type") // 新增: 获取厂商筛选参数
+
 	if page < 1 {
 		page = 1
 	}
@@ -26,23 +28,40 @@ func GetPrices(c *gin.Context) {
 
 	offset := (page - 1) * pageSize
 
+	// 构建查询条件
+	var whereClause string
+	var args []interface{}
+	if channelType != "" {
+		whereClause = "WHERE channel_type = ?"
+		args = append(args, channelType)
+	}
+
 	// 获取总数
 	var total int
-	err := db.QueryRow("SELECT COUNT(*) FROM price").Scan(&total)
+	countQuery := "SELECT COUNT(*) FROM price"
+	if whereClause != "" {
+		countQuery += " " + whereClause
+	}
+	err := db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count prices"})
 		return
 	}
 
 	// 使用分页查询
-	rows, err := db.Query(`
+	query := `
 		SELECT id, model, billing_type, channel_type, currency, input_price, output_price, 
 			price_source, status, created_at, updated_at, created_by,
 			temp_model, temp_billing_type, temp_channel_type, temp_currency,
 			temp_input_price, temp_output_price, temp_price_source, updated_by
-		FROM price 
-		ORDER BY created_at DESC
-		LIMIT ? OFFSET ?`, pageSize, offset)
+		FROM price`
+	if whereClause != "" {
+		query += " " + whereClause
+	}
+	query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	args = append(args, pageSize, offset)
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
 		return
