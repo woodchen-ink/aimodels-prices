@@ -1,6 +1,6 @@
 <template>
   <div class="providers">
-    <el-card>
+    <el-card v-loading="loading" element-loading-text="加载中...">
       <template #header>
         <div class="card-header">
           <span>模型厂商</span>
@@ -8,7 +8,7 @@
         </div>
       </template>
 
-      <el-table :data="sortedProviders" style="width: 100%">
+      <el-table :data="sortedProviders" style="width: 100%" v-loading="tableLoading" element-loading-text="加载中...">
         <el-table-column prop="id" label="ID" />
         <el-table-column label="名称">
           <template #default="{ row }">
@@ -82,18 +82,26 @@ const router = useRouter()
 
 const isAdmin = computed(() => props.user?.role === 'admin')
 
+// 添加加载状态变量
+const loading = ref(true)
+const tableLoading = ref(true)
+
 // 按ID排序的模型厂商
 const sortedProviders = computed(() => {
   return [...providers.value].sort((a, b) => a.id - b.id)
 })
 
 const loadProviders = async () => {
+  tableLoading.value = true
   try {
     const { data } = await axios.get('/api/providers')
     providers.value = Array.isArray(data) ? data : []
   } catch (error) {
     console.error('Failed to load providers:', error)
     ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+    tableLoading.value = false
   }
 }
 
@@ -213,5 +221,14 @@ const submitForm = async () => {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+}
+
+:deep(.el-loading-spinner) {
+  .el-loading-text {
+    color: #409EFF;
+  }
+  .path {
+    stroke: #409EFF;
+  }
 }
 </style> 

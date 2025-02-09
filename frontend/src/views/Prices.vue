@@ -1,6 +1,6 @@
 <template>
   <div class="prices">
-    <el-card>
+    <el-card v-loading="loading" element-loading-text="加载中...">
       <template #header>
         <div class="card-header">
           <div class="header-left">
@@ -43,10 +43,20 @@
         </div>
       </div>
 
+      <!-- 添加骨架屏 -->
+      <template v-if="loading">
+        <div v-for="i in 5" :key="i" class="skeleton-row">
+          <el-skeleton :rows="1" animated />
+        </div>
+      </template>
+      
       <el-table 
+        v-else
         :data="filteredPrices" 
         style="width: 100%"
         @selection-change="handlePriceSelectionChange"
+        v-loading="tableLoading"
+        element-loading-text="加载中..."
       >
         <el-table-column type="selection" width="55" />
         <el-table-column label="模型">
@@ -169,6 +179,19 @@
           </template>
         </el-table-column>
       </el-table>
+      
+      <!-- 添加分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- 批量添加对话框 -->
@@ -337,7 +360,7 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -392,13 +415,61 @@ const filteredPrices = computed(() => {
 
 const editingPrice = ref(null)
 
+const loading = ref(true)
+const tableLoading = ref(true)
+
+// 添加分页相关的状态
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const cachedPrices = ref(new Map()) // 用于缓存数据
+
 const loadPrices = async () => {
+  tableLoading.value = true
+  
+  // 检查缓存
+  const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}`
+  if (cachedPrices.value.has(cacheKey)) {
+    const cached = cachedPrices.value.get(cacheKey)
+    prices.value = cached.prices
+    total.value = cached.total
+    tableLoading.value = false
+    loading.value = false
+    return
+  }
+  
   try {
-    const { data } = await axios.get('/api/prices')
-    prices.value = data
+    const [pricesRes, providersRes] = await Promise.all([
+      axios.get('/api/prices', {
+        params: {
+          page: currentPage.value,
+          pageSize: pageSize.value
+        }
+      }),
+      axios.get('/api/providers')
+    ])
+    
+    prices.value = pricesRes.data.prices
+    total.value = pricesRes.data.total
+    providers.value = providersRes.data
+    
+    // 缓存数据
+    cachedPrices.value.set(cacheKey, {
+      prices: pricesRes.data.prices,
+      total: pricesRes.data.total
+    })
+    
+    // 限制缓存大小
+    if (cachedPrices.value.size > 10) {
+      const firstKey = cachedPrices.value.keys().next().value
+      cachedPrices.value.delete(firstKey)
+    }
   } catch (error) {
-    console.error('Failed to load prices:', error)
+    console.error('Failed to load data:', error)
     ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+    tableLoading.value = false
   }
 }
 
@@ -732,15 +803,26 @@ const batchUpdateStatus = async (status) => {
   }
 }
 
+// 处理分页变化
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  loadPrices()
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+  loadPrices()
+}
+
+// 当选择厂商时重置分页
+watch(selectedProvider, () => {
+  currentPage.value = 1
+  loadPrices()
+})
+
 onMounted(async () => {
   await loadPrices()
-  try {
-    const { data } = await axios.get('/api/providers')
-    providers.value = data
-  } catch (error) {
-    console.error('Failed to load providers:', error)
-    ElMessage.error('加载模型厂商数据失败')
-  }
 })
 </script>
 
@@ -899,5 +981,32 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:deep(.el-loading-spinner) {
+  .el-loading-text {
+    color: #409EFF;
+  }
+  .path {
+    stroke: #409EFF;
+  }
+}
+
+.skeleton-row {
+  padding: 10px;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 添加表格行动画 */
+:deep(.el-table__body-wrapper) {
+  .el-table__row {
+    transition: all 0.3s ease;
+  }
 }
 </style> 

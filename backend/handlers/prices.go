@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +13,36 @@ import (
 
 func GetPrices(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
+
+	// 获取分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	// 获取总数
+	var total int
+	err := db.QueryRow("SELECT COUNT(*) FROM price").Scan(&total)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count prices"})
+		return
+	}
+
+	// 使用分页查询
 	rows, err := db.Query(`
 		SELECT id, model, billing_type, channel_type, currency, input_price, output_price, 
 			price_source, status, created_at, updated_at, created_by,
 			temp_model, temp_billing_type, temp_channel_type, temp_currency,
 			temp_input_price, temp_output_price, temp_price_source, updated_by
-		FROM price ORDER BY created_at DESC`)
+		FROM price 
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?`, pageSize, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
 		return
@@ -39,7 +64,10 @@ func GetPrices(c *gin.Context) {
 		prices = append(prices, price)
 	}
 
-	c.JSON(http.StatusOK, prices)
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"prices": prices,
+	})
 }
 
 func CreatePrice(c *gin.Context) {
