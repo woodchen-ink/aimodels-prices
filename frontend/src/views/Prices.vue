@@ -202,7 +202,7 @@
     </el-card>
 
     <!-- 批量添加对话框 -->
-    <el-dialog v-model="batchDialogVisible" title="批量添加模型价格" width="90%">
+    <el-dialog v-model="batchDialogVisible" title="批量添加模型价格" width="1200px">
       <div class="batch-add-container">
         <div class="batch-toolbar">
           <el-button type="primary" @click="addRow">添加行</el-button>
@@ -233,6 +233,7 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
             </div>
           </el-popover>
         </div>
+        
         <el-table
           :data="batchForms"
           style="width: 100%"
@@ -240,12 +241,12 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           height="400"
         >
           <el-table-column type="selection" width="55" />
-          <el-table-column label="模型" width="200">
+          <el-table-column label="模型" width="180">
             <template #default="{ row }">
               <el-input v-model="row.model" placeholder="请输入模型名称" />
             </template>
           </el-table-column>
-          <el-table-column label="计费类型" width="150">
+          <el-table-column label="计费类型" width="120">
             <template #default="{ row }">
               <el-select v-model="row.billing_type" placeholder="请选择">
                 <el-option label="按量计费" value="tokens" />
@@ -253,7 +254,7 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="模型厂商" width="200">
+          <el-table-column label="模型厂商" width="180">
             <template #default="{ row }">
               <el-select v-model="row.channel_type" placeholder="请选择">
                 <el-option
@@ -284,15 +285,15 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-table-column>
           <el-table-column label="输入价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" />
+              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" style="width: 100%" />
             </template>
           </el-table-column>
           <el-table-column label="输出价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" />
+              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" style="width: 100%" />
             </template>
           </el-table-column>
-          <el-table-column label="价格来源">
+          <el-table-column label="价格来源" min-width="200" width="200">
             <template #default="{ row }">
               <el-input v-model="row.price_source" placeholder="请输入价格来源" />
             </template>
@@ -310,51 +311,67 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
     </el-dialog>
 
     <!-- 现有的单个添加对话框 -->
-    <el-dialog v-model="dialogVisible" title="提交价格">
-      <el-form :model="form" label-width="120px">
-        <el-form-item label="模型">
-          <el-input v-model="form.model" />
-        </el-form-item>
-        <el-form-item label="计费类型">
-          <el-select v-model="form.billing_type" placeholder="请选择">
-            <el-option label="按量计费" value="tokens" />
-            <el-option label="按次计费" value="times" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="模型厂商">
-          <el-select v-model="form.channel_type" placeholder="请选择">
-            <el-option 
-              v-for="provider in providers" 
-              :key="provider.id" 
-              :label="provider.name"
-              :value="provider.id.toString()"
-            >
-              <div style="display: flex; align-items: center; gap: 8px">
-                <el-image 
-                  v-if="provider.icon"
-                  :src="provider.icon"
-                  style="width: 24px; height: 24px"
-                />
-                <span>{{ provider.name }}</span>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="货币">
-          <el-select v-model="form.currency" placeholder="请选择">
-            <el-option label="美元" value="USD" />
-            <el-option label="人民币" value="CNY" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="输入价格(M)">
-          <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" />
-        </el-form-item>
-        <el-form-item label="输出价格(M)">
-          <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" />
-        </el-form-item>
-        <el-form-item label="价格来源">
-          <el-input v-model="form.price_source" />
-        </el-form-item>
+    <el-dialog v-model="dialogVisible" title="提交价格" width="700px">
+      <el-form :model="form" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="模型">
+              <el-input v-model="form.model" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="计费类型">
+              <el-select v-model="form.billing_type" placeholder="请选择">
+                <el-option label="按量计费" value="tokens" />
+                <el-option label="按次计费" value="times" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="模型厂商">
+              <el-select v-model="form.channel_type" placeholder="请选择">
+                <el-option 
+                  v-for="provider in providers" 
+                  :key="provider.id" 
+                  :label="provider.name"
+                  :value="provider.id.toString()"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <el-image 
+                      v-if="provider.icon"
+                      :src="provider.icon"
+                      style="width: 24px; height: 24px"
+                    />
+                    <span>{{ provider.name }}</span>
+                  </div>
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="货币">
+              <el-select v-model="form.currency" placeholder="请选择">
+                <el-option label="美元" value="USD" />
+                <el-option label="人民币" value="CNY" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输入价格(M)">
+              <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输出价格(M)">
+              <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="价格来源">
+              <el-input v-model="form.price_source" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
