@@ -20,7 +20,7 @@
         </ul>
 
         <h2>交流讨论</h2>
-        <p>请在帖子下留言: <a href="https://q58.pro/t/topic/277?u=wood" target="_blank">https://q58.pro/t/topic/277</a></p>
+        <p>请在帖子下留言: <a href="https://q58.club/t/topic/277?u=wood" target="_blank">https://q58.club/t/topic/277</a></p>
 
         <h2>API文档</h2>
         <el-collapse>

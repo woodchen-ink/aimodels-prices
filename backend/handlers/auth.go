@@ -91,7 +91,7 @@ func Login(c *gin.Context) {
 		}
 
 		// 设置cookie
-		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.pro", true, true)
+		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
 		c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
 		return
 	}
@@ -125,7 +125,7 @@ func Logout(c *gin.Context) {
 		db.Exec("DELETE FROM session WHERE id = ?", cookie)
 	}
 
-	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.pro", true, true)
+	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.club", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
@@ -281,8 +281,8 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 设置 cookie
-	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.pro", true, true)
+	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
 
 	// 重定向到前端
-	c.Redirect(http.StatusTemporaryRedirect, "https://aimodels-prices.q58.pro")
+	c.Redirect(http.StatusTemporaryRedirect, "https://aimodels-prices.q58.club")
 }
