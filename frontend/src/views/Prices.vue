@@ -185,14 +185,54 @@
             </el-popover>
           </template>
         </el-table-column>
-        <el-table-column v-if="isAdmin" label="操作">
+        <el-table-column label="操作" width="150" align="center">
           <template #default="{ row }">
-            <el-button-group>
-              <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-              <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
-              <el-button type="success" size="small" @click="updateStatus(row.id, 'approved')" :disabled="row.status !== 'pending'">通过</el-button>
-              <el-button type="danger" size="small" @click="updateStatus(row.id, 'rejected')" :disabled="row.status !== 'pending'">拒绝</el-button>
-            </el-button-group>
+            <div class="action-buttons">
+              <template v-if="isAdmin">
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" link @click="handleEdit(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link @click="handleDelete(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip :content="row.status === 'pending' ? '通过审核' : '已审核'" placement="top">
+                  <el-button 
+                    type="success" 
+                    link 
+                    @click="updateStatus(row.id, 'approved')" 
+                    :disabled="row.status !== 'pending'"
+                  >
+                    <el-icon><Check /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip :content="row.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
+                  <el-button 
+                    type="danger" 
+                    link 
+                    @click="updateStatus(row.id, 'rejected')" 
+                    :disabled="row.status !== 'pending'"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </template>
+              <template v-else>
+                <el-tooltip :content="row.status === 'pending' ? '等待审核中' : '提交修改'" placement="top">
+                  <el-button 
+                    type="primary" 
+                    link
+                    @click="handleQuickEdit(row)"
+                    :disabled="row.status === 'pending'"
+                  >
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </template>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -347,7 +387,11 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
     </el-dialog>
 
     <!-- 现有的单个添加对话框 -->
-    <el-dialog v-model="dialogVisible" title="提交价格" width="700px">
+    <el-dialog 
+      v-model="dialogVisible" 
+      :title="editingPrice ? (isAdmin ? '编辑价格' : '提交价格修改') : '提交价格'" 
+      width="700px"
+    >
       <el-form :model="form" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -442,6 +486,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { Edit, Delete, Check, Close } from '@element-plus/icons-vue'
 
 const props = defineProps({
   user: Object
@@ -603,6 +648,28 @@ const handleAdd = () => {
     output_price: 0,
     price_source: '',
     created_by: ''
+  }
+  dialogVisible.value = true
+}
+
+const handleQuickEdit = (row) => {
+  if (!props.user) {
+    router.push('/login')
+    ElMessage.warning('请先登录')
+    return
+  }
+  editingPrice.value = row
+  // 复制现有数据作为修改建议的基础
+  form.value = { 
+    model: row.model,
+    model_type: row.model_type,
+    billing_type: row.billing_type,
+    channel_type: row.channel_type,
+    currency: row.currency,
+    input_price: row.input_price,
+    output_price: row.output_price,
+    price_source: row.price_source,
+    created_by: props.user.username
   }
   dialogVisible.value = true
 }
@@ -1170,5 +1237,19 @@ onMounted(async () => {
   .el-select-dropdown__item {
     padding-right: 15px;
   }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.action-buttons :deep(.el-button) {
+  padding: 4px;
+}
+
+.action-buttons :deep(.el-icon) {
+  font-size: 16px;
 }
 </style> 
