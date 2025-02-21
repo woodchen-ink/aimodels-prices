@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,8 @@ func GetPrices(c *gin.Context) {
 	// 获取分页和筛选参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	channelType := c.Query("channel_type") // 新增: 获取厂商筛选参数
+	channelType := c.Query("channel_type") // 厂商筛选参数
+	modelType := c.Query("model_type")     // 模型类型筛选参数
 
 	if page < 1 {
 		page = 1
@@ -29,11 +31,22 @@ func GetPrices(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 构建查询条件
-	var whereClause string
+	var conditions []string
 	var args []interface{}
+
 	if channelType != "" {
-		whereClause = "WHERE channel_type = ?"
+		conditions = append(conditions, "channel_type = ?")
 		args = append(args, channelType)
+	}
+	if modelType != "" {
+		conditions = append(conditions, "model_type = ?")
+		args = append(args, modelType)
+	}
+
+	// 组合WHERE子句
+	var whereClause string
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
 	// 获取总数
@@ -225,16 +238,43 @@ func UpdatePrice(c *gin.Context) {
 	currentUser := user.(*models.User)
 
 	now := time.Now()
-	// 将新的价格信息存储到临时字段
-	_, err = db.Exec(`
-		UPDATE price 
-		SET temp_model = ?, temp_model_type = ?, temp_billing_type = ?, temp_channel_type = ?, temp_currency = ?, 
-			temp_input_price = ?, temp_output_price = ?, temp_price_source = ?, 
-			updated_by = ?, updated_at = ?, status = 'pending'
-		WHERE id = ?`,
-		price.Model, price.ModelType, price.BillingType, price.ChannelType, price.Currency,
-		price.InputPrice, price.OutputPrice, price.PriceSource,
-		currentUser.Username, now, id)
+
+	var query string
+	var args []interface{}
+
+	// 根据用户角色决定更新方式
+	if currentUser.Role == "admin" {
+		// 管理员直接更新主字段
+		query = `
+			UPDATE price 
+			SET model = ?, model_type = ?, billing_type = ?, channel_type = ?, currency = ?, 
+				input_price = ?, output_price = ?, price_source = ?, 
+				updated_by = ?, updated_at = ?, status = 'approved',
+				temp_model = NULL, temp_model_type = NULL, temp_billing_type = NULL, 
+				temp_channel_type = NULL, temp_currency = NULL, temp_input_price = NULL, 
+				temp_output_price = NULL, temp_price_source = NULL
+			WHERE id = ?`
+		args = []interface{}{
+			price.Model, price.ModelType, price.BillingType, price.ChannelType, price.Currency,
+			price.InputPrice, price.OutputPrice, price.PriceSource,
+			currentUser.Username, now, id,
+		}
+	} else {
+		// 普通用户更新临时字段
+		query = `
+			UPDATE price 
+			SET temp_model = ?, temp_model_type = ?, temp_billing_type = ?, temp_channel_type = ?, 
+				temp_currency = ?, temp_input_price = ?, temp_output_price = ?, temp_price_source = ?, 
+				updated_by = ?, updated_at = ?, status = 'pending'
+			WHERE id = ?`
+		args = []interface{}{
+			price.Model, price.ModelType, price.BillingType, price.ChannelType, price.Currency,
+			price.InputPrice, price.OutputPrice, price.PriceSource,
+			currentUser.Username, now, id,
+		}
+	}
+
+	_, err = db.Exec(query, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price"})
 		return

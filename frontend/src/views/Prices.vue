@@ -43,6 +43,24 @@
         </div>
       </div>
 
+      <div class="filter-section">
+        <div class="filter-label">模型类别:</div>
+        <div class="model-type-filters">
+          <el-button 
+            :type="!selectedModelType ? 'primary' : ''" 
+            @click="selectedModelType = ''"
+          >全部</el-button>
+          <el-button
+            v-for="(label, key) in modelTypeMap"
+            :key="key"
+            :type="selectedModelType === key ? 'primary' : ''"
+            @click="selectedModelType = key"
+          >
+            {{ label }}
+          </el-button>
+        </div>
+      </div>
+
       <!-- 添加骨架屏 -->
       <template v-if="loading">
         <div v-for="i in 5" :key="i" class="skeleton-row">
@@ -444,6 +462,7 @@ const form = ref({
 })
 const router = useRouter()
 const selectedProvider = ref('')
+const selectedModelType = ref('')
 
 const isAdmin = computed(() => props.user?.role === 'admin')
 
@@ -497,9 +516,12 @@ const loadPrices = async () => {
     pageSize: pageSize.value
   }
   
-  // 添加厂商筛选参数
+  // 添加筛选参数
   if (selectedProvider.value) {
     params.channel_type = selectedProvider.value
+  }
+  if (selectedModelType.value) {
+    params.model_type = selectedModelType.value
   }
   
   try {
@@ -513,7 +535,7 @@ const loadPrices = async () => {
     providers.value = providersRes.data
     
     // 缓存数据
-    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}`
+    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.prices,
       total: pricesRes.data.total
@@ -931,6 +953,12 @@ watch(selectedProvider, () => {
   loadPrices()
 })
 
+// 监听模型类型选择变化
+watch(selectedModelType, () => {
+  currentPage.value = 1 // 重置到第一页
+  loadPrices()
+})
+
 onMounted(async () => {
   await loadModelTypes()
   await loadPrices()
@@ -962,6 +990,13 @@ onMounted(async () => {
 }
 
 .provider-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.model-type-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

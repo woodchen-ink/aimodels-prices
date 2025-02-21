@@ -38,16 +38,16 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="ID" v-if="!editingProvider">
-          <el-input-number v-model="form.id" :min="1" />
+    <el-dialog v-model="dialogVisible" :title="editingProvider ? '编辑模型厂商' : '添加模型厂商'" width="500px">
+      <el-form :model="form" label-width="100px">
+        <el-form-item label="ID">
+          <el-input v-model="form.id" placeholder="请输入厂商ID" />
         </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="form.name" />
+          <el-input v-model="form.name" placeholder="请输入厂商名称" />
         </el-form-item>
-        <el-form-item label="图标链接">
-          <el-input v-model="form.icon" />
+        <el-form-item label="图标">
+          <el-input v-model="form.icon" placeholder="请输入图标URL" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -74,7 +74,7 @@ const providers = ref([])
 const dialogVisible = ref(false)
 const editingProvider = ref(null)
 const form = ref({
-  id: 1,
+  id: '',
   name: '',
   icon: ''
 })
@@ -109,19 +109,9 @@ onMounted(() => {
   loadProviders()
 })
 
-const dialogTitle = computed(() => {
-  if (editingProvider.value) {
-    return '编辑模型厂商'
-  }
-  return '添加模型厂商'
-})
-
 const handleEdit = (provider) => {
-  if (!isAdmin.value) {
-    ElMessage.warning('只有管理员可以编辑模型厂商信息')
-    return
-  }
   editingProvider.value = provider
+  // 编辑时复制所有字段
   form.value = { ...provider }
   dialogVisible.value = true
 }
@@ -162,8 +152,14 @@ const handleAdd = () => {
     ElMessage.warning('请先登录')
     return
   }
+  editingProvider.value = null
+  // 重置表单时确保所有字段都被重置
+  form.value = {
+    id: '',
+    name: '',
+    icon: ''
+  }
   dialogVisible.value = true
-  form.value = { id: 1, name: '', icon: '' }
 }
 
 const submitForm = async () => {
@@ -196,7 +192,7 @@ const submitForm = async () => {
     }
     dialogVisible.value = false
     editingProvider.value = null
-    form.value = { id: 1, name: '', icon: '' }
+    form.value = { id: '', name: '', icon: '' }
   } catch (error) {
     console.error('Failed to submit provider:', error)
     if (error.response?.data?.error) {

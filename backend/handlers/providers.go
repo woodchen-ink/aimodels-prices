@@ -82,12 +82,7 @@ func CreateProvider(c *gin.Context) {
 
 // UpdateProvider 更新模型厂商
 func UpdateProvider(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
+	oldID := c.Param("id")
 	var provider models.Provider
 	if err := c.ShouldBindJSON(&provider); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -95,25 +90,68 @@ func UpdateProvider(c *gin.Context) {
 	}
 
 	db := c.MustGet("db").(*sql.DB)
-	now := time.Now()
-	_, err = db.Exec(`
-		UPDATE provider 
-		SET name = ?, icon = ?, updated_at = ?
-		WHERE id = ?`,
-		provider.Name, provider.Icon, now, id)
+
+	// 开始事务
+	tx, err := db.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update provider"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin transaction"})
 		return
 	}
 
-	// 获取更新后的模型厂商信息
-	err = db.QueryRow(`
-		SELECT id, name, icon, created_at, updated_at, created_by
-		FROM provider WHERE id = ?`, id).Scan(
-		&provider.ID, &provider.Name, &provider.Icon,
-		&provider.CreatedAt, &provider.UpdatedAt, &provider.CreatedBy)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get updated provider"})
+	// 如果ID发生变化，需要同时更新price表中的引用
+	if oldID != strconv.FormatUint(uint64(provider.ID), 10) {
+		// 更新price表中的channel_type
+		_, err = tx.Exec("UPDATE price SET channel_type = ? WHERE channel_type = ?", provider.ID, oldID)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price references"})
+			return
+		}
+
+		// 更新price表中的temp_channel_type
+		_, err = tx.Exec("UPDATE price SET temp_channel_type = ? WHERE temp_channel_type = ?", provider.ID, oldID)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price temp references"})
+			return
+		}
+
+		// 删除旧记录
+		_, err = tx.Exec("DELETE FROM provider WHERE id = ?", oldID)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete old provider"})
+			return
+		}
+
+		// 插入新记录
+		_, err = tx.Exec(`
+			INSERT INTO provider (id, name, icon, created_at, updated_at)
+			VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, provider.ID, provider.Name, provider.Icon)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new provider"})
+			return
+		}
+	} else {
+		// 如果ID没有变化，直接更新
+		_, err = tx.Exec(`
+			UPDATE provider 
+			SET name = ?, icon = ?, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ?
+		`, provider.Name, provider.Icon, oldID)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update provider"})
+			return
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 		return
 	}
 
