@@ -464,6 +464,12 @@ const billingTypeMap = {
 const getStatus = (status) => statusMap[status] || status
 const getBillingType = (type) => billingTypeMap[type] || type
 
+// 添加getModelType函数
+const getModelType = (type) => {
+  if (!type) return ''
+  return modelTypeMap.value[type] || type
+}
+
 const calculateRate = (price, currency) => {
   if (!price) return 0
   return currency === 'USD' ? (price / 2).toFixed(4) : (price / 14).toFixed(4)
