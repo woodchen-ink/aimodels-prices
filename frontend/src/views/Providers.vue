@@ -41,7 +41,7 @@
     <el-dialog v-model="dialogVisible" :title="editingProvider ? '编辑模型厂商' : '添加模型厂商'" width="500px">
       <el-form :model="form" label-width="100px">
         <el-form-item label="ID">
-          <el-input v-model="form.id" placeholder="请输入厂商ID" />
+          <el-input v-model.number="form.id" placeholder="请输入厂商ID" type="number" />
         </el-form-item>
         <el-form-item label="名称">
           <el-input v-model="form.name" placeholder="请输入厂商名称" />
@@ -227,4 +227,4 @@ const submitForm = async () => {
     stroke: #409EFF;
   }
 }
-</style> 
+</style>
