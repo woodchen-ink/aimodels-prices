@@ -164,13 +164,19 @@ const handleAdd = () => {
 
 const submitForm = async () => {
   try {
+    // 确保ID是数字类型
+    const formData = {
+      ...form.value,
+      id: parseInt(form.value.id)
+    }
+
     if (editingProvider.value) {
       if (!isAdmin.value) {
         ElMessage.error('只有管理员可以编辑模型厂商信息')
         return
       }
       // 管理员编辑模型厂商
-      const { data } = await axios.put(`/api/providers/${editingProvider.value.id}`, form.value)
+      const { data } = await axios.put(`/api/providers/${editingProvider.value.id}`, formData)
       if (data.error) {
         ElMessage.error(data.error)
         return
@@ -182,7 +188,7 @@ const submitForm = async () => {
       ElMessage.success('更新成功')
     } else {
       // 创建新模型厂商
-      const { data } = await axios.post('/api/providers', form.value)
+      const { data } = await axios.post('/api/providers', formData)
       if (data.error) {
         ElMessage.error(data.error)
         return
