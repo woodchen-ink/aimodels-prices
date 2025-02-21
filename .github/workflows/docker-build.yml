@@ -21,9 +21,9 @@ jobs:
 
       # 设置 Go 环境
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
 
       # 构建后端（使用 Alpine 环境）
       - name: Build backend
@@ -31,12 +31,14 @@ jobs:
           cd backend
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main-amd64 .
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o main-arm64 .
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o migrate-amd64 scripts/migrate.go
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o migrate-arm64 scripts/migrate.go
 
       # 设置 Node.js 环境
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 

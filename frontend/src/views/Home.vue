@@ -24,7 +24,7 @@
 
         <h2>API文档</h2>
         <el-collapse>
-          <el-collapse-item title="获取价格倍率">
+          <el-collapse-item title="One-Hub 价格倍率">
             <div class="api-doc">
               <div class="api-url">
                 <span class="method">GET</span>

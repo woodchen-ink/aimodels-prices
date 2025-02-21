@@ -88,6 +88,13 @@ func main() {
 			auth.GET("/user", handlers.GetUser)
 			auth.GET("/callback", handlers.AuthCallback)
 		}
+
+		// 模型类型相关路由
+		modelTypes := api.Group("/model-types")
+		{
+			modelTypes.GET("", handlers.GetModelTypes)
+			modelTypes.POST("", middleware.AuthRequired(), handlers.CreateModelType)
+		}
 	}
 
 	// 启动服务器

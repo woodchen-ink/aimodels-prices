@@ -50,9 +50,9 @@ func GetPrices(c *gin.Context) {
 
 	// 使用分页查询
 	query := `
-		SELECT id, model, billing_type, channel_type, currency, input_price, output_price, 
+		SELECT id, model, model_type, billing_type, channel_type, currency, input_price, output_price, 
 			price_source, status, created_at, updated_at, created_by,
-			temp_model, temp_billing_type, temp_channel_type, temp_currency,
+			temp_model, temp_model_type, temp_billing_type, temp_channel_type, temp_currency,
 			temp_input_price, temp_output_price, temp_price_source, updated_by
 		FROM price`
 	if whereClause != "" {
@@ -72,10 +72,10 @@ func GetPrices(c *gin.Context) {
 	for rows.Next() {
 		var price models.Price
 		if err := rows.Scan(
-			&price.ID, &price.Model, &price.BillingType, &price.ChannelType, &price.Currency,
+			&price.ID, &price.Model, &price.ModelType, &price.BillingType, &price.ChannelType, &price.Currency,
 			&price.InputPrice, &price.OutputPrice, &price.PriceSource, &price.Status,
 			&price.CreatedAt, &price.UpdatedAt, &price.CreatedBy,
-			&price.TempModel, &price.TempBillingType, &price.TempChannelType, &price.TempCurrency,
+			&price.TempModel, &price.TempModelType, &price.TempBillingType, &price.TempChannelType, &price.TempCurrency,
 			&price.TempInputPrice, &price.TempOutputPrice, &price.TempPriceSource, &price.UpdatedBy); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan price"})
 			return
@@ -107,10 +107,10 @@ func CreatePrice(c *gin.Context) {
 
 	now := time.Now()
 	result, err := db.Exec(`
-		INSERT INTO price (model, billing_type, channel_type, currency, input_price, output_price, 
+		INSERT INTO price (model, model_type, billing_type, channel_type, currency, input_price, output_price, 
 			price_source, status, created_by, created_at, updated_at) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
-		price.Model, price.BillingType, price.ChannelType, price.Currency,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+		price.Model, price.ModelType, price.BillingType, price.ChannelType, price.Currency,
 		price.InputPrice, price.OutputPrice, price.PriceSource, price.CreatedBy,
 		now, now)
 	if err != nil {
@@ -146,6 +146,7 @@ func UpdatePriceStatus(c *gin.Context) {
 		_, err := db.Exec(`
 			UPDATE price 
 			SET model = COALESCE(temp_model, model),
+				model_type = COALESCE(temp_model_type, model_type),
 				billing_type = COALESCE(temp_billing_type, billing_type),
 				channel_type = COALESCE(temp_channel_type, channel_type),
 				currency = COALESCE(temp_currency, currency),
@@ -155,6 +156,7 @@ func UpdatePriceStatus(c *gin.Context) {
 				status = ?,
 				updated_at = ?,
 				temp_model = NULL,
+				temp_model_type = NULL,
 				temp_billing_type = NULL,
 				temp_channel_type = NULL,
 				temp_currency = NULL,
@@ -174,6 +176,7 @@ func UpdatePriceStatus(c *gin.Context) {
 			SET status = ?,
 				updated_at = ?,
 				temp_model = NULL,
+				temp_model_type = NULL,
 				temp_billing_type = NULL,
 				temp_channel_type = NULL,
 				temp_currency = NULL,
@@ -225,11 +228,11 @@ func UpdatePrice(c *gin.Context) {
 	// 将新的价格信息存储到临时字段
 	_, err = db.Exec(`
 		UPDATE price 
-		SET temp_model = ?, temp_billing_type = ?, temp_channel_type = ?, temp_currency = ?, 
+		SET temp_model = ?, temp_model_type = ?, temp_billing_type = ?, temp_channel_type = ?, temp_currency = ?, 
 			temp_input_price = ?, temp_output_price = ?, temp_price_source = ?, 
 			updated_by = ?, updated_at = ?, status = 'pending'
 		WHERE id = ?`,
-		price.Model, price.BillingType, price.ChannelType, price.Currency,
+		price.Model, price.ModelType, price.BillingType, price.ChannelType, price.Currency,
 		price.InputPrice, price.OutputPrice, price.PriceSource,
 		currentUser.Username, now, id)
 	if err != nil {
@@ -239,15 +242,15 @@ func UpdatePrice(c *gin.Context) {
 
 	// 获取更新后的价格信息
 	err = db.QueryRow(`
-		SELECT id, model, billing_type, channel_type, currency, input_price, output_price, 
+		SELECT id, model, model_type, billing_type, channel_type, currency, input_price, output_price, 
 			price_source, status, created_at, updated_at, created_by,
-			temp_model, temp_billing_type, temp_channel_type, temp_currency,
+			temp_model, temp_model_type, temp_billing_type, temp_channel_type, temp_currency,
 			temp_input_price, temp_output_price, temp_price_source, updated_by
 		FROM price WHERE id = ?`, id).Scan(
-		&price.ID, &price.Model, &price.BillingType, &price.ChannelType, &price.Currency,
+		&price.ID, &price.Model, &price.ModelType, &price.BillingType, &price.ChannelType, &price.Currency,
 		&price.InputPrice, &price.OutputPrice, &price.PriceSource, &price.Status,
 		&price.CreatedAt, &price.UpdatedAt, &price.CreatedBy,
-		&price.TempModel, &price.TempBillingType, &price.TempChannelType, &price.TempCurrency,
+		&price.TempModel, &price.TempModelType, &price.TempBillingType, &price.TempChannelType, &price.TempCurrency,
 		&price.TempInputPrice, &price.TempOutputPrice, &price.TempPriceSource, &price.UpdatedBy)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get updated price"})
@@ -274,6 +277,7 @@ func DeletePrice(c *gin.Context) {
 // PriceRate 价格倍率结构
 type PriceRate struct {
 	Model       string  `json:"model"`
+	ModelType   string  `json:"model_type"`
 	Type        string  `json:"type"`
 	ChannelType uint    `json:"channel_type"`
 	Input       float64 `json:"input"`
@@ -284,7 +288,7 @@ type PriceRate struct {
 func GetPriceRates(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
 	rows, err := db.Query(`
-		SELECT model, billing_type, channel_type, 
+		SELECT model, model_type, billing_type, channel_type, 
 			CASE 
 				WHEN currency = 'USD' THEN input_price / 2
 				ELSE input_price / 14
@@ -307,6 +311,7 @@ func GetPriceRates(c *gin.Context) {
 		var rate PriceRate
 		if err := rows.Scan(
 			&rate.Model,
+			&rate.ModelType,
 			&rate.Type,
 			&rate.ChannelType,
 			&rate.Input,

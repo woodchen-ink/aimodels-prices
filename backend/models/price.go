@@ -7,6 +7,7 @@ import (
 type Price struct {
 	ID          uint      `json:"id"`
 	Model       string    `json:"model"`
+	ModelType   string    `json:"model_type"`   // text2text, text2image, etc.
 	BillingType string    `json:"billing_type"` // tokens or times
 	ChannelType string    `json:"channel_type"`
 	Currency    string    `json:"currency"` // USD or CNY
@@ -19,6 +20,7 @@ type Price struct {
 	CreatedBy   string    `json:"created_by"`
 	// 临时字段，用于存储待审核的更新
 	TempModel       *string  `json:"temp_model,omitempty"`
+	TempModelType   *string  `json:"temp_model_type,omitempty"`
 	TempBillingType *string  `json:"temp_billing_type,omitempty"`
 	TempChannelType *string  `json:"temp_channel_type,omitempty"`
 	TempCurrency    *string  `json:"temp_currency,omitempty"`
@@ -34,6 +36,7 @@ func CreatePriceTableSQL() string {
 	CREATE TABLE IF NOT EXISTS price (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		model TEXT NOT NULL,
+		model_type TEXT NOT NULL,
 		billing_type TEXT NOT NULL,
 		channel_type TEXT NOT NULL,
 		currency TEXT NOT NULL,
@@ -45,6 +48,7 @@ func CreatePriceTableSQL() string {
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		created_by TEXT NOT NULL,
 		temp_model TEXT,
+		temp_model_type TEXT,
 		temp_billing_type TEXT,
 		temp_channel_type TEXT,
 		temp_currency TEXT,

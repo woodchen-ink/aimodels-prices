@@ -30,3 +30,4 @@ out/
 # 日志文件
 *.log
 logs/
+backend/data/aimodels.db
