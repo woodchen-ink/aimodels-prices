@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DBPath     string
-	ServerPort string
+	DBPath         string
+	ServerPort     string
+	AdminUsernames []string
 }
 
 func LoadConfig() (*Config, error) {
@@ -30,9 +32,17 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
+	// 从环境变量获取管理员用户名列表，多个用户名用逗号分隔
+	adminUsernames := strings.Split(getEnv("ADMIN_USERNAMES", "admin"), ",")
+	// 去除每个用户名的空白字符
+	for i, username := range adminUsernames {
+		adminUsernames[i] = strings.TrimSpace(username)
+	}
+
 	config := &Config{
-		DBPath:     filepath.Join(dbDir, "aimodels.db"),
-		ServerPort: getEnv("PORT", "8080"),
+		DBPath:         filepath.Join(dbDir, "aimodels.db"),
+		ServerPort:     getEnv("PORT", "8080"),
+		AdminUsernames: adminUsernames,
 	}
 
 	return config, nil

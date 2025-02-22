@@ -31,3 +31,4 @@ out/
 *.log
 logs/
 backend/data/aimodels.db
+data/aimodels.db

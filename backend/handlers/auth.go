@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"aimodels-prices/config"
 	"aimodels-prices/models"
 )
 
@@ -91,7 +92,14 @@ func Login(c *gin.Context) {
 		}
 
 		// 设置cookie
-		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
+		redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
+		parsedURL, err := url.Parse(redirectURI)
+		if err != nil || parsedURL.Host == "" {
+			// 如果无法解析重定向URI，使用默认域名
+			c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "localhost", true, true)
+		} else {
+			c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", parsedURL.Host, true, true)
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
 		return
 	}
@@ -99,7 +107,7 @@ func Login(c *gin.Context) {
 	// 生产环境使用 OAuth 2.0
 	clientID := os.Getenv("OAUTH_CLIENT_ID")
 	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
-	authorizeURL := os.Getenv("OAUTH_AUTHORIZE_URL")
+	authorizeURL := "https://connect.q58.club/oauth/authorize"
 
 	if clientID == "" || redirectURI == "" || authorizeURL == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "OAuth configuration not found"})
@@ -125,7 +133,14 @@ func Logout(c *gin.Context) {
 		db.Exec("DELETE FROM session WHERE id = ?", cookie)
 	}
 
-	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.club", true, true)
+	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
+	parsedURL, err := url.Parse(redirectURI)
+	if err != nil || parsedURL.Host == "" {
+		// 如果无法解析重定向URI，使用默认域名
+		c.SetCookie("session", "", -1, "/", "localhost", true, true)
+	} else {
+		c.SetCookie("session", "", -1, "/", parsedURL.Host, true, true)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
@@ -163,7 +178,7 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 获取访问令牌
-	tokenURL := os.Getenv("OAUTH_TOKEN_URL")
+	tokenURL := "https://connect.q58.club/api/oauth/access_token"
 	clientID := os.Getenv("OAUTH_CLIENT_ID")
 	clientSecret := os.Getenv("OAUTH_CLIENT_SECRET")
 	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
@@ -196,7 +211,7 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 使用访问令牌获取用户信息
-	userURL := os.Getenv("OAUTH_USER_URL")
+	userURL := "https://connect.q58.club/api/oauth/user"
 	req, err := http.NewRequest("GET", userURL, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user info request"})
@@ -227,14 +242,24 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	db := c.MustGet("db").(*sql.DB)
+	cfg := c.MustGet("config").(*config.Config)
 
 	// 检查用户是否存在
 	var user models.User
 	err = db.QueryRow("SELECT id, username, email, role FROM user WHERE email = ?", userInfo.Email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Role)
 
+	// 检查用户是否在管理员列表中
+	isAdmin := false
+	for _, adminUsername := range cfg.AdminUsernames {
+		if adminUsername == userInfo.Username {
+			isAdmin = true
+			break
+		}
+	}
+
 	role := "user"
-	if userInfo.Admin {
+	if isAdmin {
 		role = "admin"
 	}
 
@@ -281,8 +306,16 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 设置 cookie
-	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
+	// redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
+	parsedURL, err := url.Parse(redirectURI)
+	if err != nil || parsedURL.Host == "" {
+		// 如果无法解析重定向URI，使用默认域名
+		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "localhost", true, true)
+	} else {
+		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", parsedURL.Host, true, true)
+	}
 
 	// 重定向到前端
-	c.Redirect(http.StatusTemporaryRedirect, "https://aimodels-prices.q58.club")
+	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+	c.Redirect(http.StatusTemporaryRedirect, baseURL)
 }
