@@ -80,7 +80,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.model }}</span>
-              <el-tag v-if="row.temp_model" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_model && row.temp_model !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_model }}
               </el-tag>
             </div>
@@ -90,7 +90,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ getModelType(row.model_type) }}</span>
-              <el-tag v-if="row.temp_model_type" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_model_type && row.temp_model_type !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ getModelType(row.temp_model_type) }}
               </el-tag>
             </div>
@@ -100,7 +100,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ getBillingType(row.billing_type) }}</span>
-              <el-tag v-if="row.temp_billing_type" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_billing_type && row.temp_billing_type !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ getBillingType(row.temp_billing_type) }}
               </el-tag>
             </div>
@@ -117,7 +117,7 @@
                 />
                 <span>{{ getProvider(row.channel_type)?.name || row.channel_type }}</span>
               </div>
-              <el-tag v-if="row.temp_channel_type" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_channel_type && row.temp_channel_type !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ getProvider(row.temp_channel_type)?.name || row.temp_channel_type }}
               </el-tag>
             </div>
@@ -127,7 +127,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.currency }}</span>
-              <el-tag v-if="row.temp_currency" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_currency && row.temp_currency !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_currency }}
               </el-tag>
             </div>
@@ -137,7 +137,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.input_price === 0 ? '免费' : row.input_price }}</span>
-              <el-tag v-if="row.temp_input_price !== null && row.temp_input_price !== undefined" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_input_price !== null && row.temp_input_price !== undefined && row.temp_input_price !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_input_price === 0 ? '免费' : row.temp_input_price }}
               </el-tag>
             </div>
@@ -147,7 +147,7 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.output_price === 0 ? '免费' : row.output_price }}</span>
-              <el-tag v-if="row.temp_output_price !== null && row.temp_output_price !== undefined" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_output_price !== null && row.temp_output_price !== undefined && row.temp_output_price !== 'NULL'" type="warning" size="small" effect="light">
                 待审核: {{ row.temp_output_price === 0 ? '免费' : row.temp_output_price }}
               </el-tag>
             </div>
@@ -172,7 +172,7 @@
                   <span class="detail-label">价格来源:</span>
                   <div class="detail-value">
                     <span>{{ row.price_source }}</span>
-                    <el-tag v-if="row.temp_price_source !== null && row.temp_price_source !== undefined" type="warning" size="small" effect="light">
+                    <el-tag v-if="row.temp_price_source && row.temp_price_source !== 'NULL'" type="warning" size="small" effect="light">
                       待审核: {{ row.temp_price_source }}
                     </el-tag>
                   </div>
@@ -777,7 +777,7 @@ const loadModelTypes = async () => {
     const types = response.data
     const map = {}
     types.forEach(type => {
-      map[type.type_key] = type.type_label
+      map[type.key] = type.label
     })
     modelTypeMap.value = map
   } catch (error) {
@@ -1026,9 +1026,9 @@ watch(selectedModelType, () => {
   loadPrices()
 })
 
-onMounted(async () => {
-  await loadModelTypes()
-  await loadPrices()
+onMounted(() => {
+  loadModelTypes()
+  loadPrices()
 })
 </script>
 
