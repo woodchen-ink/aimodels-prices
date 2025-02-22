@@ -9,8 +9,18 @@ import (
 )
 
 type Config struct {
-	DBPath     string
+	// MySQL配置
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+
+	// 其他配置
 	ServerPort string
+
+	// SQLite配置（用于数据迁移）
+	SQLitePath string
 }
 
 func LoadConfig() (*Config, error) {
@@ -31,8 +41,18 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config := &Config{
-		DBPath:     filepath.Join(dbDir, "aimodels.db"),
+		// MySQL配置
+		DBHost:     getEnv("DB_HOST", "localhost"),
+		DBPort:     getEnv("DB_PORT", "3306"),
+		DBUser:     getEnv("DB_USER", "root"),
+		DBPassword: getEnv("DB_PASSWORD", ""),
+		DBName:     getEnv("DB_NAME", "aimodels"),
+
+		// 其他配置
 		ServerPort: getEnv("PORT", "8080"),
+
+		// SQLite路径（用于数据迁移）
+		SQLitePath: filepath.Join(dbDir, "aimodels.db"),
 	}
 
 	return config, nil

@@ -24,32 +24,32 @@ type Session struct {
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
-// CreateTableSQL 返回创建用户表的 SQL
+// CreateUserTableSQL 返回创建用户表的 SQL
 func CreateUserTableSQL() string {
 	return `
 	CREATE TABLE IF NOT EXISTS user (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE NOT NULL,
-		email TEXT UNIQUE NOT NULL,
-		role TEXT NOT NULL DEFAULT 'user',
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		deleted_at DATETIME
-	)`
+		id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		username VARCHAR(255) UNIQUE NOT NULL,
+		email VARCHAR(255) UNIQUE NOT NULL,
+		role VARCHAR(50) NOT NULL DEFAULT 'user',
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP NULL
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 }
 
 // CreateSessionTableSQL 返回创建会话表的 SQL
 func CreateSessionTableSQL() string {
 	return `
 	CREATE TABLE IF NOT EXISTS session (
-		id TEXT PRIMARY KEY,
-		user_id INTEGER NOT NULL,
-		expires_at DATETIME NOT NULL,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		deleted_at DATETIME,
+		id VARCHAR(255) PRIMARY KEY,
+		user_id BIGINT UNSIGNED NOT NULL,
+		expires_at TIMESTAMP NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP NULL,
 		FOREIGN KEY (user_id) REFERENCES user(id)
-	)`
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 }
 
 // GetUser 获取会话关联的用户

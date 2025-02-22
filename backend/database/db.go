@@ -2,10 +2,13 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
+	_ "github.com/go-sql-driver/mysql"
 	_ "modernc.org/sqlite"
 
+	"aimodels-prices/config"
 	"aimodels-prices/models"
 )
 
@@ -13,16 +16,27 @@ import (
 var DB *sql.DB
 
 // InitDB 初始化数据库连接
-func InitDB(dbPath string) error {
+func InitDB(cfg *config.Config) error {
 	var err error
-	DB, err = sql.Open("sqlite", dbPath)
+
+	// 构建MySQL DSN
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+	)
+
+	// 连接MySQL
+	DB, err = sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to MySQL: %v", err)
 	}
 
 	// 测试连接
 	if err = DB.Ping(); err != nil {
-		return err
+		return fmt.Errorf("failed to ping MySQL: %v", err)
 	}
 
 	// 设置连接池参数
@@ -31,10 +45,24 @@ func InitDB(dbPath string) error {
 
 	// 创建表结构
 	if err = createTables(); err != nil {
-		return err
+		return fmt.Errorf("failed to create tables: %v", err)
 	}
 
 	return nil
+}
+
+// InitSQLiteDB 初始化SQLite数据库连接（用于数据迁移）
+func InitSQLiteDB(dbPath string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to SQLite: %v", err)
+	}
+
+	if err = db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping SQLite: %v", err)
+	}
+
+	return db, nil
 }
 
 // createTables 创建数据库表
