@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -68,10 +69,13 @@ func Login(c *gin.Context) {
 	}
 
 	// 构建授权 URL
-	authURL := fmt.Sprintf("%s?response_type=code&client_id=%s&redirect_uri=%s",
-		authorizeURL,
-		url.QueryEscape(clientID),
-		url.QueryEscape(redirectURI))
+	data := url.Values{}
+	data.Set("response_type", "code")
+	data.Set("client_id", clientID)
+	data.Set("redirect_uri", redirectURI)
+	data.Set("scope", "read_profile")
+
+	authURL := authorizeURL + "?" + data.Encode()
 
 	// 返回授权 URL 而不是直接重定向
 	c.JSON(http.StatusOK, gin.H{
@@ -139,13 +143,24 @@ func AuthCallback(c *gin.Context) {
 	// 构建请求体
 	data := url.Values{}
 	data.Set("code", code)
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
 	data.Set("redirect_uri", redirectURI)
-	data.Set("grant_type", "authorization_code")
 
-	// 发送请求获取访问令牌
-	resp, err := http.PostForm(tokenURL, data)
+	// 创建请求
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token request"})
+		return
+	}
+
+	// 设置 Basic Auth
+	req.SetBasicAuth(clientID, clientSecret)
+
+	// 设置请求头
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// 发送请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get access token"})
 		return
@@ -165,14 +180,14 @@ func AuthCallback(c *gin.Context) {
 
 	// 使用访问令牌获取用户信息
 	userURL := "https://connect.q58.club/api/oauth/user"
-	req, err := http.NewRequest("GET", userURL, nil)
+	req, err = http.NewRequest("GET", userURL, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user info request"})
 		return
 	}
 
 	req.Header.Set("Authorization", "Bearer "+tokenResp.AccessToken)
-	client := &http.Client{}
+	client = &http.Client{}
 	userResp, err := client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
