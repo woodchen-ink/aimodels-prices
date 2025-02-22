@@ -18,6 +18,9 @@ type Config struct {
 
 	// 其他配置
 	ServerPort string
+
+	// SQLite配置（用于数据迁移）
+	SQLitePath string
 }
 
 func LoadConfig() (*Config, error) {
@@ -47,6 +50,9 @@ func LoadConfig() (*Config, error) {
 
 		// 其他配置
 		ServerPort: getEnv("PORT", "8080"),
+
+		// SQLite路径（用于数据迁移）
+		SQLitePath: filepath.Join(dbDir, "aimodels.db"),
 	}
 
 	return config, nil

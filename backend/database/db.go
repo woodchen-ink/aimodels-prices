@@ -6,6 +6,7 @@ import (
 	"log"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "modernc.org/sqlite"
 
 	"aimodels-prices/config"
 	"aimodels-prices/models"

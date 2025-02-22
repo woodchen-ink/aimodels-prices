@@ -777,7 +777,7 @@ const loadModelTypes = async () => {
     const types = response.data
     const map = {}
     types.forEach(type => {
-      map[type.key] = type.label
+      map[type.type_key] = type.type_label
     })
     modelTypeMap.value = map
   } catch (error) {
@@ -795,18 +795,18 @@ const handleModelTypeCreate = async (value) => {
   }
   
   // 如果输入的是英文key，直接使用
-  let key = value
-  let label = value
+  let type_key = value
+  let type_label = value
   if (!/^[a-zA-Z0-9_]+$/.test(value)) {
     // 如果是中文描述，生成一个新的key
-    key = `type_${Date.now()}`
-    label = value
+    type_key = `type_${Date.now()}`
+    type_label = value
   }
 
   try {
-    await axios.post('/api/model-types', { key, label })
-    modelTypeMap.value[key] = label
-    return key
+    await axios.post('/api/model-types', { type_key, type_label })
+    modelTypeMap.value[type_key] = type_label
+    return type_key
   } catch (error) {
     console.error('Failed to create model type:', error)
     ElMessage.error('创建模型类型失败')

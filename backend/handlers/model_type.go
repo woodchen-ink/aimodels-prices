@@ -4,29 +4,25 @@ import (
 	"database/sql"
 
 	"github.com/gin-gonic/gin"
-)
 
-// ModelType 模型类型结构
-type ModelType struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
-}
+	"aimodels-prices/models"
+)
 
 // GetModelTypes 获取所有模型类型
 func GetModelTypes(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
 
-	rows, err := db.Query("SELECT key, label FROM model_type")
+	rows, err := db.Query("SELECT type_key, type_label FROM model_type")
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
 
-	var types []ModelType
+	var types []models.ModelType
 	for rows.Next() {
-		var t ModelType
-		if err := rows.Scan(&t.Key, &t.Label); err != nil {
+		var t models.ModelType
+		if err := rows.Scan(&t.TypeKey, &t.TypeLabel); err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
@@ -40,17 +36,17 @@ func GetModelTypes(c *gin.Context) {
 func CreateModelType(c *gin.Context) {
 	db := c.MustGet("db").(*sql.DB)
 
-	var newType ModelType
+	var newType models.ModelType
 	if err := c.ShouldBindJSON(&newType); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
 	_, err := db.Exec(`
-		INSERT INTO model_type (key, label)
+		INSERT INTO model_type (type_key, type_label)
 		VALUES (?, ?)
-		ON CONFLICT(key) DO UPDATE SET label = excluded.label
-	`, newType.Key, newType.Label)
+		ON DUPLICATE KEY UPDATE type_label = VALUES(type_label)
+	`, newType.TypeKey, newType.TypeLabel)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
