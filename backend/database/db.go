@@ -6,7 +6,6 @@ import (
 	"log"
 
 	_ "github.com/go-sql-driver/mysql"
-	_ "modernc.org/sqlite"
 
 	"aimodels-prices/config"
 	"aimodels-prices/models"
@@ -51,20 +50,6 @@ func InitDB(cfg *config.Config) error {
 	return nil
 }
 
-// InitSQLiteDB 初始化SQLite数据库连接（用于数据迁移）
-func InitSQLiteDB(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to SQLite: %v", err)
-	}
-
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping SQLite: %v", err)
-	}
-
-	return db, nil
-}
-
 // createTables 创建数据库表
 func createTables() error {
 	// 创建用户表
@@ -82,6 +67,12 @@ func createTables() error {
 	// 创建模型厂商表
 	if _, err := DB.Exec(models.CreateProviderTableSQL()); err != nil {
 		log.Printf("Failed to create provider table: %v", err)
+		return err
+	}
+
+	// 创建模型类型表
+	if _, err := DB.Exec(models.CreateModelTypeTableSQL()); err != nil {
+		log.Printf("Failed to create model_type table: %v", err)
 		return err
 	}
 

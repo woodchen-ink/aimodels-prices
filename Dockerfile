@@ -24,16 +24,6 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then \
     rm main-* && \
     chmod +x main
 
-# 复制迁移工具
-COPY backend/migrate-* ./
-RUN if [ "$(uname -m)" = "aarch64" ]; then \
-      cp migrate-arm64 migrate; \
-    else \
-      cp migrate-amd64 migrate; \
-    fi && \
-    rm migrate-* && \
-    chmod +x migrate
-
 COPY frontend/dist /app/frontend
 COPY backend/config/nginx.conf /etc/nginx/nginx.conf
 COPY scripts/start.sh ./
