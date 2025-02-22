@@ -56,46 +56,6 @@ func GetAuthStatus(c *gin.Context) {
 }
 
 func Login(c *gin.Context) {
-	// 开发环境下使用测试账号
-	if gin.Mode() != gin.ReleaseMode {
-		db := c.MustGet("db").(*sql.DB)
-
-		// 创建测试用户(如果不存在)
-		var count int
-		err := db.QueryRow("SELECT COUNT(*) FROM user WHERE username = 'admin'").Scan(&count)
-		if err != nil || count == 0 {
-			_, err = db.Exec("INSERT INTO user (username, email, role) VALUES (?, ?, ?)",
-				"admin", "admin@test.com", "admin")
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create test user"})
-				return
-			}
-		}
-
-		// 获取用户ID
-		var userID uint
-		err = db.QueryRow("SELECT id FROM user WHERE username = 'admin'").Scan(&userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
-			return
-		}
-
-		// 创建会话
-		sessionID := generateSessionID()
-		expiresAt := time.Now().Add(24 * time.Hour)
-		_, err = db.Exec("INSERT INTO session (id, user_id, expires_at) VALUES (?, ?, ?)",
-			sessionID, userID, expiresAt)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
-			return
-		}
-
-		// 设置cookie
-		c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
-		c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
-		return
-	}
-
 	// 生产环境使用 OAuth 2.0
 	clientID := os.Getenv("OAUTH_CLIENT_ID")
 	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
