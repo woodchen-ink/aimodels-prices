@@ -32,6 +32,12 @@ func main() {
 
 	r := gin.Default()
 
+	// 注入配置
+	r.Use(func(c *gin.Context) {
+		c.Set("config", cfg)
+		c.Next()
+	})
+
 	// 注入数据库
 	r.Use(func(c *gin.Context) {
 		c.Set("db", database.DB)
