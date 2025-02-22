@@ -31,8 +31,6 @@ jobs:
           cd backend
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main-amd64 .
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o main-arm64 .
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o migrate-amd64 scripts/migrate.go
-          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o migrate-arm64 scripts/migrate.go
 
       # 设置 Node.js 环境
       - name: Set up Node.js
