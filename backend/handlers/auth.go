@@ -219,6 +219,7 @@ func AuthCallback(c *gin.Context) {
 
 	// 检查用户是否在管理员列表中
 	isAdmin := false
+	fmt.Printf("Checking if %s is admin. Admin usernames: %v\n", userInfo.Username, cfg.AdminUsernames)
 	for _, adminUsername := range cfg.AdminUsernames {
 		if adminUsername == userInfo.Username {
 			isAdmin = true
@@ -252,7 +253,7 @@ func AuthCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	} else {
-		// 更新现有用户信息
+		// 更新现有用户信息，包括角色
 		_, err = db.Exec("UPDATE user SET username = ?, role = ? WHERE id = ?",
 			userInfo.Username, role, user.ID)
 		if err != nil {

@@ -33,11 +33,16 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// 从环境变量获取管理员用户名列表，多个用户名用逗号分隔
+	rawAdminUsernames := os.Getenv("ADMIN_USERNAMES")
+	fmt.Printf("Raw ADMIN_USERNAMES from env: %q\n", rawAdminUsernames)
+
 	adminUsernames := strings.Split(getEnv("ADMIN_USERNAMES", "admin"), ",")
 	// 去除每个用户名的空白字符
 	for i, username := range adminUsernames {
 		adminUsernames[i] = strings.TrimSpace(username)
 	}
+
+	fmt.Printf("Processed admin usernames: %v\n", adminUsernames)
 
 	config := &Config{
 		DBPath:         filepath.Join(dbDir, "aimodels.db"),
