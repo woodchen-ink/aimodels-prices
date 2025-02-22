@@ -187,7 +187,7 @@ func migratePrices(sqliteDB *sql.DB, mysqlDB *sql.DB) error {
 			model           string
 			modelType       string
 			billingType     string
-			channelType     string
+			channelType     uint
 			currency        string
 			inputPrice      float64
 			outputPrice     float64
@@ -199,7 +199,7 @@ func migratePrices(sqliteDB *sql.DB, mysqlDB *sql.DB) error {
 			tempModel       sql.NullString
 			tempModelType   sql.NullString
 			tempBillingType sql.NullString
-			tempChannelType sql.NullString
+			tempChannelType sql.NullInt64
 			tempCurrency    sql.NullString
 			tempInputPrice  sql.NullFloat64
 			tempOutputPrice sql.NullFloat64
@@ -226,7 +226,7 @@ func migratePrices(sqliteDB *sql.DB, mysqlDB *sql.DB) error {
 		`,
 			id, model, modelType, billingType, channelType, currency,
 			inputPrice, outputPrice, priceSource, status, createdAt, updatedAt,
-			createdBy, tempModel.String, tempModelType.String, tempBillingType.String, tempChannelType.String,
+			createdBy, tempModel.String, tempModelType.String, tempBillingType.String, tempChannelType.Int64,
 			tempCurrency.String, tempInputPrice.Float64, tempOutputPrice.Float64, tempPriceSource.String, updatedBy.String,
 		)
 		if err != nil {
