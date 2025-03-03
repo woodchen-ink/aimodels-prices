@@ -176,8 +176,7 @@ func AuthCallback(c *gin.Context) {
 		ID        string `json:"id"`
 		Email     string `json:"email"`
 		Username  string `json:"username"`
-		Admin     bool   `json:"admin"`
-		AvatarURL string `json:"avatar_url"`
+		AvatarURL string `json:"avata"`
 		Name      string `json:"name"`
 	}
 
@@ -194,7 +193,7 @@ func AuthCallback(c *gin.Context) {
 		&user.ID, &user.Username, &user.Email, &user.Role)
 
 	role := "user"
-	if userInfo.Admin {
+	if userInfo.ID == "1" { // 这里写自己的用户ID
 		role = "admin"
 	}
 
