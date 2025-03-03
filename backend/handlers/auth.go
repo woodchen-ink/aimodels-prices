@@ -59,9 +59,9 @@ func Login(c *gin.Context) {
 	// 生产环境使用 OAuth 2.0
 	clientID := os.Getenv("OAUTH_CLIENT_ID")
 	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
-	authorizeURL := os.Getenv("OAUTH_AUTHORIZE_URL")
+	authorizeURL := "https://connect.czl.net/oauth2/authorize" // 固定授权URL
 
-	if clientID == "" || redirectURI == "" || authorizeURL == "" {
+	if clientID == "" || redirectURI == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "OAuth configuration not found"})
 		return
 	}
@@ -123,7 +123,7 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 获取访问令牌
-	tokenURL := os.Getenv("OAUTH_TOKEN_URL")
+	tokenURL := "https://connect.czl.net/api/oauth2/token" // 固定令牌URL
 	clientID := os.Getenv("OAUTH_CLIENT_ID")
 	clientSecret := os.Getenv("OAUTH_CLIENT_SECRET")
 	redirectURI := os.Getenv("OAUTH_REDIRECT_URI")
@@ -156,7 +156,7 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 使用访问令牌获取用户信息
-	userURL := os.Getenv("OAUTH_USER_URL")
+	userURL := "https://connect.czl.net/api/oauth2/userinfo" // 固定用户信息URL
 	req, err := http.NewRequest("GET", userURL, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user info request"})
@@ -173,17 +173,32 @@ func AuthCallback(c *gin.Context) {
 	defer userResp.Body.Close()
 
 	var userInfo struct {
-		ID        string `json:"id"`
+		ID        int    `json:"id"`
 		Email     string `json:"email"`
 		Username  string `json:"username"`
-		AvatarURL string `json:"avata"`
+		Avatar    string `json:"avatar"`
 		Name      string `json:"name"`
+		Upstreams []struct {
+			ID               int                    `json:"id"`
+			UpstreamID       int                    `json:"upstream_id"`
+			UpstreamName     string                 `json:"upstream_name"`
+			UpstreamType     string                 `json:"upstream_type"`
+			UpstreamIcon     string                 `json:"upstream_icon"`
+			UpstreamUserID   string                 `json:"upstream_user_id"`
+			UpstreamUsername string                 `json:"upstream_username"`
+			UpstreamEmail    string                 `json:"upstream_email"`
+			UpstreamAvatar   string                 `json:"upstream_avatar"`
+			ProviderData     map[string]interface{} `json:"provider_data"`
+		} `json:"upstreams"`
 	}
 
 	if err := json.NewDecoder(userResp.Body).Decode(&userInfo); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
 		return
 	}
+
+	// 添加调试日志
+	fmt.Printf("收到OAuth用户信息: ID=%v, Username=%s, Email=%s\n", userInfo.ID, userInfo.Username, userInfo.Email)
 
 	db := c.MustGet("db").(*sql.DB)
 
@@ -193,8 +208,11 @@ func AuthCallback(c *gin.Context) {
 		&user.ID, &user.Username, &user.Email, &user.Role)
 
 	role := "user"
-	if userInfo.ID == "1" { // 这里写自己的用户ID
+	if userInfo.ID == 1 { // 这里写自己的用户ID
 		role = "admin"
+		fmt.Printf("为用户 %s (ID=%v) 设置管理员角色\n", userInfo.Username, userInfo.ID)
+	} else {
+		fmt.Printf("用户 %s (ID=%v) 不是管理员\n", userInfo.Username, userInfo.ID)
 	}
 
 	if err == sql.ErrNoRows {
