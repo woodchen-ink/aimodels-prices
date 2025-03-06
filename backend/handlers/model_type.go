@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,6 +12,16 @@ import (
 
 // GetModelTypes 获取所有模型类型
 func GetModelTypes(c *gin.Context) {
+	cacheKey := "model_types"
+
+	// 尝试从缓存获取
+	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
+		if types, ok := cachedData.([]models.ModelType); ok {
+			c.JSON(http.StatusOK, types)
+			return
+		}
+	}
+
 	var types []models.ModelType
 
 	// 使用GORM查询所有模型类型，按排序字段和键值排序
@@ -18,6 +29,9 @@ func GetModelTypes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 存入缓存，有效期30分钟
+	database.GlobalCache.Set(cacheKey, types, 30*time.Minute)
 
 	c.JSON(http.StatusOK, types)
 }
@@ -35,6 +49,9 @@ func CreateModelType(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 清除缓存
+	database.GlobalCache.Delete("model_types")
 
 	c.JSON(http.StatusCreated, newType)
 }
@@ -55,44 +72,19 @@ func UpdateModelType(c *gin.Context) {
 		return
 	}
 
-	// 如果key发生变化，需要删除旧记录并创建新记录
-	if typeKey != updateType.TypeKey {
-		// 开始事务
-		tx := database.DB.Begin()
+	// 更新记录
+	existingType.TypeLabel = updateType.TypeLabel
+	existingType.SortOrder = updateType.SortOrder
 
-		// 删除旧记录
-		if err := tx.Delete(&existingType).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete old model type"})
-			return
-		}
-
-		// 创建新记录
-		if err := tx.Create(&updateType).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new model type"})
-			return
-		}
-
-		// 提交事务
-		if err := tx.Commit().Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
-			return
-		}
-	} else {
-		// 直接更新，只更新特定字段
-		if err := database.DB.Model(&existingType).Updates(map[string]interface{}{
-			"type_label": updateType.TypeLabel,
-			"sort_order": updateType.SortOrder,
-		}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update model type"})
-			return
-		}
-		updateType = existingType
+	if err := database.DB.Save(&existingType).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, updateType)
+	// 清除缓存
+	database.GlobalCache.Delete("model_types")
+
+	c.JSON(http.StatusOK, existingType)
 }
 
 // DeleteModelType 删除模型类型
@@ -120,9 +112,12 @@ func DeleteModelType(c *gin.Context) {
 
 	// 删除记录
 	if err := database.DB.Delete(&existingType).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete model type"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 清除缓存
+	database.GlobalCache.Delete("model_types")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Model type deleted successfully"})
 }

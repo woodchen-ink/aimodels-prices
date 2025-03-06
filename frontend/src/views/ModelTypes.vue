@@ -1,24 +1,25 @@
 <template>
-  <div class="model-types">
-    <el-card v-loading="loading" element-loading-text="加载中...">
+  <div class="model-types-container">
+    <el-card v-loading="loading" element-loading-text="加载中..." class="model-types-card">
       <template #header>
         <div class="card-header">
-          <span>模型类别</span>
+          <span class="title">模型类别</span>
           <el-button v-if="isAdmin" type="primary" @click="handleAdd">添加模型类别</el-button>
         </div>
       </template>
 
       <el-table 
         :data="modelTypes" 
-        style="width: 100%" 
         v-loading="tableLoading" 
         element-loading-text="加载中..."
         row-key="key"
+        class="model-types-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266' }"
       >
-        <el-table-column prop="key" label="类别键值" width="180" />
-        <el-table-column prop="label" label="类别名称" width="180" />
-        <el-table-column prop="sort_order" label="排序" width="100" />
-        <el-table-column v-if="isAdmin" label="操作" width="200">
+        <el-table-column prop="key" label="类别键值" min-width="200" />
+        <el-table-column prop="label" label="类别名称" min-width="200" />
+        <el-table-column prop="sort_order" label="排序" min-width="120" align="center" />
+        <el-table-column v-if="isAdmin" label="操作" min-width="150" align="center">
           <template #default="{ row }">
             <el-button-group>
               <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
@@ -168,14 +169,49 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.model-types-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.model-types-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.model-types-table {
+  width: 100%;
+  margin-top: 10px;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 768px) {
+  .model-types-container {
+    padding: 10px;
+  }
+  
+  .model-types-card {
+    max-width: 100%;
+  }
 }
 </style> 

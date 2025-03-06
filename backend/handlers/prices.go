@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,8 +28,20 @@ func GetPrices(c *gin.Context) {
 
 	offset := (page - 1) * pageSize
 
-	// 构建查询
-	query := database.DB.Model(&models.Price{})
+	// 构建缓存键
+	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s",
+		page, pageSize, channelType, modelType)
+
+	// 尝试从缓存获取
+	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
+		if result, ok := cachedData.(gin.H); ok {
+			c.JSON(http.StatusOK, result)
+			return
+		}
+	}
+
+	// 构建查询 - 使用索引优化
+	query := database.DB.Model(&models.Price{}).Select("*")
 
 	// 添加筛选条件
 	if channelType != "" {
@@ -38,24 +51,44 @@ func GetPrices(c *gin.Context) {
 		query = query.Where("model_type = ?", modelType)
 	}
 
-	// 获取总数
+	// 获取总数 - 使用缓存优化
 	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count prices"})
-		return
+	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s", channelType, modelType)
+
+	if cachedTotal, found := database.GlobalCache.Get(totalCacheKey); found {
+		if t, ok := cachedTotal.(int64); ok {
+			total = t
+		} else {
+			if err := query.Count(&total).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count prices"})
+				return
+			}
+			database.GlobalCache.Set(totalCacheKey, total, 5*time.Minute)
+		}
+	} else {
+		if err := query.Count(&total).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count prices"})
+			return
+		}
+		database.GlobalCache.Set(totalCacheKey, total, 5*time.Minute)
 	}
 
-	// 获取分页数据
+	// 获取分页数据 - 使用索引优化
 	var prices []models.Price
 	if err := query.Order("created_at DESC").Limit(pageSize).Offset(offset).Find(&prices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	result := gin.H{
 		"total": total,
 		"data":  prices,
-	})
+	}
+
+	// 存入缓存，有效期5分钟
+	database.GlobalCache.Set(cacheKey, result, 5*time.Minute)
+
+	c.JSON(http.StatusOK, result)
 }
 
 func CreatePrice(c *gin.Context) {
@@ -92,6 +125,9 @@ func CreatePrice(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create price"})
 		return
 	}
+
+	// 清除所有价格相关缓存
+	clearPriceCache()
 
 	c.JSON(http.StatusCreated, price)
 }
@@ -194,6 +230,9 @@ func UpdatePriceStatus(c *gin.Context) {
 		return
 	}
 
+	// 清除所有价格相关缓存
+	clearPriceCache()
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Status updated successfully",
 		"status":     input.Status,
@@ -288,6 +327,9 @@ func UpdatePrice(c *gin.Context) {
 		}
 	}
 
+	// 清除所有价格相关缓存
+	clearPriceCache()
+
 	c.JSON(http.StatusOK, existingPrice)
 }
 
@@ -307,6 +349,9 @@ func DeletePrice(c *gin.Context) {
 		return
 	}
 
+	// 清除所有价格相关缓存
+	clearPriceCache()
+
 	c.JSON(http.StatusOK, gin.H{"message": "Price deleted successfully"})
 }
 
@@ -322,33 +367,45 @@ type PriceRate struct {
 
 // GetPriceRates 获取价格倍率
 func GetPriceRates(c *gin.Context) {
+	cacheKey := "price_rates"
+
+	// 尝试从缓存获取
+	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
+		if rates, ok := cachedData.([]PriceRate); ok {
+			c.JSON(http.StatusOK, rates)
+			return
+		}
+	}
+
+	// 使用索引优化查询，只查询需要的字段
 	var prices []models.Price
-	if err := database.DB.Where("status = 'approved'").Find(&prices).Error; err != nil {
+	if err := database.DB.Select("model, model_type, billing_type, channel_type, input_price, output_price").
+		Where("status = 'approved'").
+		Find(&prices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
 		return
 	}
 
-	// 按模型分组
-	modelMap := make(map[string]map[uint]models.Price)
+	// 按模型分组 - 使用map优化
+	modelMap := make(map[string]map[uint]models.Price, len(prices)/2) // 预分配合理大小
 	for _, price := range prices {
 		if _, exists := modelMap[price.Model]; !exists {
-			modelMap[price.Model] = make(map[uint]models.Price)
+			modelMap[price.Model] = make(map[uint]models.Price, 5) // 假设每个模型有5个提供商
 		}
 		modelMap[price.Model][price.ChannelType] = price
 	}
 
+	// 预分配rates切片，减少内存分配
+	rates := make([]PriceRate, 0, len(prices))
+
 	// 计算倍率
-	var rates []PriceRate
 	for model, providers := range modelMap {
 		// 找出基准价格（通常是OpenAI的价格）
 		var basePrice models.Price
 		var found bool
-		for _, price := range providers {
-			if price.ChannelType == 1 { // 假设OpenAI的ID是1
-				basePrice = price
-				found = true
-				break
-			}
+		if baseProvider, exists := providers[1]; exists { // 直接检查ID为1的提供商
+			basePrice = baseProvider
+			found = true
 		}
 
 		if !found {
@@ -382,6 +439,9 @@ func GetPriceRates(c *gin.Context) {
 			})
 		}
 	}
+
+	// 存入缓存，有效期10分钟
+	database.GlobalCache.Set(cacheKey, rates, 10*time.Minute)
 
 	c.JSON(http.StatusOK, rates)
 }
@@ -454,8 +514,17 @@ func ApproveAllPrices(c *gin.Context) {
 		return
 	}
 
+	// 清除所有价格相关缓存
+	clearPriceCache()
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "All pending prices approved successfully",
 		"count":   len(pendingPrices),
 	})
+}
+
+// clearPriceCache 清除所有价格相关的缓存
+func clearPriceCache() {
+	// 由于我们无法精确知道哪些缓存键与价格相关，所以清除所有缓存
+	database.GlobalCache.Clear()
 }

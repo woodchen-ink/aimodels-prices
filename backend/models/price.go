@@ -8,16 +8,16 @@ import (
 
 type Price struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
-	Model       string         `json:"model" gorm:"not null"`
-	ModelType   string         `json:"model_type" gorm:"not null"`   // text2text, text2image, etc.
-	BillingType string         `json:"billing_type" gorm:"not null"` // tokens or times
-	ChannelType uint           `json:"channel_type" gorm:"not null"`
+	Model       string         `json:"model" gorm:"not null;index:idx_model_channel"`
+	ModelType   string         `json:"model_type" gorm:"not null;index:idx_model_type"` // text2text, text2image, etc.
+	BillingType string         `json:"billing_type" gorm:"not null"`                    // tokens or times
+	ChannelType uint           `json:"channel_type" gorm:"not null;index:idx_model_channel"`
 	Currency    string         `json:"currency" gorm:"not null"` // USD or CNY
 	InputPrice  float64        `json:"input_price" gorm:"not null"`
 	OutputPrice float64        `json:"output_price" gorm:"not null"`
 	PriceSource string         `json:"price_source" gorm:"not null"`
-	Status      string         `json:"status" gorm:"not null;default:pending"` // pending, approved, rejected
-	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	Status      string         `json:"status" gorm:"not null;default:pending;index:idx_status"` // pending, approved, rejected
+	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime;index:idx_created_at"`
 	UpdatedAt   time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	CreatedBy   string         `json:"created_by" gorm:"not null"`
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`

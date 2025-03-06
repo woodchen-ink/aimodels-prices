@@ -1,21 +1,21 @@
 <template>
-  <div class="providers">
+  <div class="providers-container">
     <el-card v-loading="loading" element-loading-text="加载中...">
       <template #header>
         <div class="card-header">
-          <span>模型厂商</span>
+          <span class="title">模型厂商</span>
           <el-button type="primary" @click="handleAdd">添加模型厂商</el-button>
         </div>
       </template>
 
-      <el-table :data="sortedProviders" style="width: 100%" v-loading="tableLoading" element-loading-text="加载中...">
-        <el-table-column prop="id" label="ID" />
-        <el-table-column label="名称">
+      <el-table :data="sortedProviders" style="width: 100%" v-loading="tableLoading" element-loading-text="加载中..." class="providers-table" :header-cell-style="{ background: '#f5f7fa', color: '#606266' }">
+        <el-table-column prop="id" label="ID" min-width="200"/>
+        <el-table-column label="名称" min-width="200">
           <template #default="{ row }">
             {{ row.name }}
           </template>
         </el-table-column>
-        <el-table-column label="图标">
+        <el-table-column label="图标" min-width="200">
           <template #default="{ row }">
             <el-image 
               v-if="row.icon"
@@ -26,8 +26,8 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="created_by" label="创建者" />
-        <el-table-column v-if="isAdmin" label="操作" width="200">
+        <!-- <el-table-column prop="created_by" label="创建者" min-width="100"/> -->
+        <el-table-column v-if="isAdmin" label="操作" min-width="150">
           <template #default="{ row }">
             <el-button-group>
               <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
@@ -231,6 +231,36 @@ const submitForm = async () => {
   }
   .path {
     stroke: #409EFF;
+  }
+}
+.providers-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+.providers-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+.providers-table {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 768px) {
+  .providers-container {
+    padding: 10px;
+  }
+  .providers-card {
+    max-width: 100%;
   }
 }
 </style>

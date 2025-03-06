@@ -13,12 +13,25 @@ import (
 
 // GetProviders 获取所有模型厂商
 func GetProviders(c *gin.Context) {
+	cacheKey := "providers"
+
+	// 尝试从缓存获取
+	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
+		if providers, ok := cachedData.([]models.Provider); ok {
+			c.JSON(http.StatusOK, providers)
+			return
+		}
+	}
+
 	var providers []models.Provider
 
 	if err := database.DB.Order("id").Find(&providers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch providers"})
 		return
 	}
+
+	// 存入缓存，有效期30分钟
+	database.GlobalCache.Set(cacheKey, providers, 30*time.Minute)
 
 	c.JSON(http.StatusOK, providers)
 }
@@ -55,6 +68,9 @@ func CreateProvider(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create provider"})
 		return
 	}
+
+	// 清除缓存
+	database.GlobalCache.Delete("providers")
 
 	c.JSON(http.StatusCreated, provider)
 }
@@ -126,6 +142,9 @@ func UpdateProvider(c *gin.Context) {
 		}
 		provider = existingProvider
 	}
+
+	// 清除缓存
+	database.GlobalCache.Delete("providers")
 
 	c.JSON(http.StatusOK, provider)
 }
@@ -211,6 +230,9 @@ func DeleteProvider(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete provider"})
 		return
 	}
+
+	// 清除缓存
+	database.GlobalCache.Delete("providers")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Provider deleted successfully"})
 }

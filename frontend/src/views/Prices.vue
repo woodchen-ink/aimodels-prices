@@ -252,10 +252,9 @@
           :small="false"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
-          size-change-label="条/页"
         >
           <template #sizes>
-            <el-select v-model="pageSize" :options="[10, 20, 50, 100].map(item => ({ value: item, label: item + ' 条/页' }))">
+            <el-select v-model="pageSize" :options="[10, 20, 50, 100].map(item => ({ value: item, label: `${item} 条/页` }))">
               <template #prefix>每页</template>
             </el-select>
           </template>
@@ -529,7 +528,11 @@ const selectedModelType = ref('')
 const isAdmin = computed(() => props.user?.role === 'admin')
 
 const providers = ref([])
-const getProvider = (id) => providers.value.find(p => p.id.toString() === id)
+const getProvider = (id) => {
+  // 确保id是字符串类型进行比较
+  const idStr = id?.toString()
+  return providers.value.find(p => p.id.toString() === idStr)
+}
 
 const statusMap = {
   'pending': '待审核',
@@ -592,14 +595,14 @@ const loadPrices = async () => {
       axios.get('/api/providers')
     ])
     
-    prices.value = pricesRes.data.prices
+    prices.value = pricesRes.data.data
     total.value = pricesRes.data.total
     providers.value = providersRes.data
     
     // 缓存数据
     const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}`
     cachedPrices.value.set(cacheKey, {
-      prices: pricesRes.data.prices,
+      prices: pricesRes.data.data,
       total: pricesRes.data.total
     })
     
@@ -1280,6 +1283,7 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  padding: 0 10px;
 }
 
 /* 添加表格行动画 */
@@ -1297,11 +1301,26 @@ onMounted(() => {
   }
   
   .el-select .el-input {
-    width: 110px !important;
+    width: 140px !important;
   }
   
   .el-select-dropdown__item {
     padding-right: 15px;
+  }
+  
+  .el-pagination__sizes {
+    margin-right: 15px;
+  }
+  
+  /* 修复选择框宽度问题 */
+  .el-select__wrapper {
+    min-width: 140px !important;
+    width: auto !important;
+  }
+  
+  /* 确保下拉菜单也足够宽 */
+  .el-select__popper {
+    min-width: 140px !important;
   }
 }
 
@@ -1317,5 +1336,37 @@ onMounted(() => {
 
 .action-buttons :deep(.el-icon) {
   font-size: 16px;
+}
+
+/* 添加全局样式覆盖 */
+:global(.el-pagination .el-select__wrapper) {
+  min-width: 140px !important;
+  width: auto !important;
+}
+
+:global(.el-pagination .el-select-dropdown__wrap) {
+  min-width: 140px !important;
+}
+
+:global(.el-pagination .el-select .el-input__wrapper) {
+  width: auto !important;
+  min-width: 140px !important;
+}
+</style>
+
+<style>
+/* 全局样式，确保分页选择框宽度足够 */
+.el-pagination .el-select__wrapper {
+  min-width: 140px !important;
+  width: auto !important;
+}
+
+.el-pagination .el-select .el-input__wrapper {
+  width: auto !important;
+  min-width: 140px !important;
+}
+
+.el-select-dropdown {
+  min-width: 140px !important;
 }
 </style> 
