@@ -1,18 +1,22 @@
 package models
 
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
 // ModelType 模型类型结构
 type ModelType struct {
-	TypeKey   string `json:"key"`
-	TypeLabel string `json:"label"`
-	SortOrder int    `json:"sort_order"`
+	TypeKey   string         `json:"key" gorm:"primaryKey;column:type_key"`
+	TypeLabel string         `json:"label" gorm:"column:type_label;not null"`
+	SortOrder int            `json:"sort_order" gorm:"column:sort_order;default:0"`
+	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-// CreateModelTypeTableSQL 返回创建模型类型表的 SQL
-func CreateModelTypeTableSQL() string {
-	return `
-	CREATE TABLE IF NOT EXISTS model_type (
-		type_key VARCHAR(50) PRIMARY KEY,
-		type_label VARCHAR(255) NOT NULL,
-		sort_order INT NOT NULL DEFAULT 0
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+// TableName 指定表名
+func (ModelType) TableName() string {
+	return "model_type"
 }

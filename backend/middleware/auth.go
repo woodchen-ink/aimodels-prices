@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"aimodels-prices/database"
 	"aimodels-prices/models"
 )
 
@@ -19,30 +19,14 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		db := c.MustGet("db").(*sql.DB)
 		var session models.Session
-		err = db.QueryRow("SELECT id, user_id, expires_at, created_at, updated_at, deleted_at FROM session WHERE id = ?", cookie).Scan(
-			&session.ID, &session.UserID, &session.ExpiresAt, &session.CreatedAt, &session.UpdatedAt, &session.DeletedAt)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session"})
+		if err := database.DB.Preload("User").Where("id = ? AND expires_at > ?", cookie, time.Now()).First(&session).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired session"})
 			c.Abort()
 			return
 		}
 
-		if session.ExpiresAt.Before(time.Now()) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
-			c.Abort()
-			return
-		}
-
-		user, err := session.GetUser(db)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
-			c.Abort()
-			return
-		}
-
-		c.Set("user", user)
+		c.Set("user", &session.User)
 		c.Next()
 	}
 }

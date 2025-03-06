@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,9 +12,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"aimodels-prices/database"
 	"aimodels-prices/models"
 )
 
+// generateSessionID 生成随机会话ID
 func generateSessionID() string {
 	b := make([]byte, 32)
 	rand.Read(b)
@@ -29,11 +30,8 @@ func GetAuthStatus(c *gin.Context) {
 		return
 	}
 
-	db := c.MustGet("db").(*sql.DB)
 	var session models.Session
-	err = db.QueryRow("SELECT id, user_id, expires_at, created_at, updated_at, deleted_at FROM session WHERE id = ?", cookie).Scan(
-		&session.ID, &session.UserID, &session.ExpiresAt, &session.CreatedAt, &session.UpdatedAt, &session.DeletedAt)
-	if err != nil {
+	if err := database.DB.Preload("User").Where("id = ?", cookie).First(&session).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session"})
 		return
 	}
@@ -43,15 +41,9 @@ func GetAuthStatus(c *gin.Context) {
 		return
 	}
 
-	user, err := session.GetUser(db)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
-		return
-	}
-
-	c.Set("user", user)
+	c.Set("user", &session.User)
 	c.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"user": session.User,
 	})
 }
 
@@ -81,8 +73,8 @@ func Login(c *gin.Context) {
 func Logout(c *gin.Context) {
 	cookie, err := c.Cookie("session")
 	if err == nil {
-		db := c.MustGet("db").(*sql.DB)
-		db.Exec("DELETE FROM session WHERE id = ?", cookie)
+		// 删除会话
+		database.DB.Where("id = ?", cookie).Delete(&models.Session{})
 	}
 
 	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.club", true, true)
@@ -96,22 +88,19 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
-	db := c.MustGet("db").(*sql.DB)
 	var session models.Session
-	if err := db.QueryRow("SELECT id, user_id, expires_at, created_at, updated_at, deleted_at FROM session WHERE id = ?", cookie).Scan(
-		&session.ID, &session.UserID, &session.ExpiresAt, &session.CreatedAt, &session.UpdatedAt, &session.DeletedAt); err != nil {
+	if err := database.DB.Preload("User").Where("id = ?", cookie).First(&session).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session"})
 		return
 	}
 
-	user, err := session.GetUser(db)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+	if session.ExpiresAt.Before(time.Now()) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"user": session.User,
 	})
 }
 
@@ -200,12 +189,9 @@ func AuthCallback(c *gin.Context) {
 	// 添加调试日志
 	fmt.Printf("收到OAuth用户信息: ID=%v, Username=%s, Email=%s\n", userInfo.ID, userInfo.Username, userInfo.Email)
 
-	db := c.MustGet("db").(*sql.DB)
-
 	// 检查用户是否存在
 	var user models.User
-	err = db.QueryRow("SELECT id, username, email, role FROM user WHERE email = ?", userInfo.Email).Scan(
-		&user.ID, &user.Username, &user.Email, &user.Role)
+	result := database.DB.Where("email = ?", userInfo.Email).First(&user)
 
 	role := "user"
 	if userInfo.ID == 1 { // 这里写自己的用户ID
@@ -215,44 +201,37 @@ func AuthCallback(c *gin.Context) {
 		fmt.Printf("用户 %s (ID=%v) 不是管理员\n", userInfo.Username, userInfo.ID)
 	}
 
-	if err == sql.ErrNoRows {
+	if result.Error != nil {
 		// 创建新用户
-		result, err := db.Exec(`
-			INSERT INTO user (username, email, role) 
-			VALUES (?, ?, ?)`,
-			userInfo.Username, userInfo.Email, role)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-			return
-		}
-		userID, _ := result.LastInsertId()
 		user = models.User{
-			ID:       uint(userID),
 			Username: userInfo.Username,
 			Email:    userInfo.Email,
 			Role:     role,
 		}
-	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-		return
+		if err := database.DB.Create(&user).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+			return
+		}
 	} else {
 		// 更新现有用户的角色（如果需要）
 		if user.Role != role {
-			_, err = db.Exec("UPDATE user SET role = ? WHERE id = ?", role, user.ID)
-			if err != nil {
+			user.Role = role
+			if err := database.DB.Save(&user).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
 				return
 			}
-			user.Role = role
 		}
 	}
 
 	// 创建会话
 	sessionID := generateSessionID()
 	expiresAt := time.Now().Add(24 * time.Hour)
-	_, err = db.Exec("INSERT INTO session (id, user_id, expires_at) VALUES (?, ?, ?)",
-		sessionID, user.ID, expiresAt)
-	if err != nil {
+	session := models.Session{
+		ID:        sessionID,
+		UserID:    user.ID,
+		ExpiresAt: expiresAt,
+	}
+	if err := database.DB.Create(&session).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
 		return
 	}

@@ -23,7 +23,6 @@ func main() {
 	if err := database.InitDB(cfg); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.DB.Close()
 
 	// 设置gin模式
 	if gin.Mode() == gin.ReleaseMode {
@@ -31,12 +30,6 @@ func main() {
 	}
 
 	r := gin.Default()
-
-	// 注入数据库
-	r.Use(func(c *gin.Context) {
-		c.Set("db", database.DB)
-		c.Next()
-	})
 
 	// CORS中间件
 	r.Use(func(c *gin.Context) {
