@@ -81,10 +81,11 @@ func UpdateModelType(c *gin.Context) {
 			return
 		}
 	} else {
-		// 直接更新
-		existingType.TypeLabel = updateType.TypeLabel
-		existingType.SortOrder = updateType.SortOrder
-		if err := database.DB.Save(&existingType).Error; err != nil {
+		// 直接更新，只更新特定字段
+		if err := database.DB.Model(&existingType).Updates(map[string]interface{}{
+			"type_label": updateType.TypeLabel,
+			"sort_order": updateType.SortOrder,
+		}).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update model type"})
 			return
 		}
