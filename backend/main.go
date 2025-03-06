@@ -68,6 +68,7 @@ func main() {
 			prices.PUT("/:id", middleware.AuthRequired(), handlers.UpdatePrice)
 			prices.DELETE("/:id", middleware.AuthRequired(), handlers.DeletePrice)
 			prices.PUT("/:id/status", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdatePriceStatus)
+			prices.PUT("/approve-all", middleware.AuthRequired(), middleware.AdminRequired(), handlers.ApproveAllPrices)
 		}
 
 		// 模型厂商相关路由

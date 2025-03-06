@@ -12,6 +12,10 @@
               <el-button type="danger" @click="batchUpdateStatus('rejected')">批量拒绝</el-button>
               <el-divider direction="vertical" />
             </template>
+            <template v-if="isAdmin">
+              <el-button type="success" @click="approveAllPending">全部通过</el-button>
+              <el-divider direction="vertical" />
+            </template>
             <el-button type="primary" @click="handleBatchAdd">批量添加</el-button>
             <el-button type="primary" @click="handleAdd">提交价格</el-button>
           </div>
@@ -260,11 +264,10 @@
     </el-card>
 
     <!-- 批量添加对话框 -->
-    <el-dialog v-model="batchDialogVisible" title="批量添加模型价格" width="1200px">
+    <el-dialog v-model="batchDialogVisible" title="批量添加模型价格" width="1330px">
       <div class="batch-add-container">
         <div class="batch-toolbar">
           <el-button type="primary" @click="addRow">添加行</el-button>
-          <el-button type="danger" @click="removeSelectedRows" :disabled="!selectedRows.length">删除选中行</el-button>
           <el-divider direction="vertical" />
           <el-popover
             placement="bottom"
@@ -295,10 +298,24 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
         <el-table
           :data="batchForms"
           style="width: 100%"
-          @selection-change="handleSelectionChange"
           height="400"
         >
-          <el-table-column type="selection" width="55" />
+          <el-table-column label="操作" width="100">
+            <template #default="{ row, $index }">
+              <div class="row-actions">
+                <el-tooltip content="复制" placement="top">
+                  <el-button type="primary" link @click="duplicateRow($index)">
+                    <el-icon><Document /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link @click="removeRow($index)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="模型" width="180">
             <template #default="{ row }">
               <el-input v-model="row.model" placeholder="请输入模型名称" />
@@ -361,12 +378,12 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-table-column>
           <el-table-column label="输入价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" style="width: 100%" />
+              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
             </template>
           </el-table-column>
           <el-table-column label="输出价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" style="width: 100%" />
+              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
             </template>
           </el-table-column>
           <el-table-column label="价格来源" min-width="200" width="200">
@@ -456,12 +473,12 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-col>
           <el-col :span="12">
             <el-form-item label="输入价格(M)">
-              <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" style="width: 100%" />
+              <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="输出价格(M)">
-              <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" style="width: 100%" />
+              <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -486,7 +503,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { Edit, Delete, Check, Close } from '@element-plus/icons-vue'
+import { Edit, Delete, Check, Close, Document } from '@element-plus/icons-vue'
 
 const props = defineProps({
   user: Object
@@ -500,8 +517,8 @@ const form = ref({
   billing_type: 'tokens',
   channel_type: '',
   currency: 'USD',
-  input_price: 0,
-  output_price: 0,
+  input_price: null,
+  output_price: null,
   price_source: '',
   created_by: ''
 })
@@ -644,8 +661,8 @@ const handleAdd = () => {
     billing_type: 'tokens',
     channel_type: '',
     currency: 'USD',
-    input_price: 0,
-    output_price: 0,
+    input_price: null,
+    output_price: null,
     price_source: '',
     created_by: ''
   }
@@ -734,8 +751,8 @@ const handleSubmitResponse = async (response) => {
     billing_type: 'tokens',
     channel_type: '',
     currency: 'USD',
-    input_price: 0,
-    output_price: 0,
+    input_price: null,
+    output_price: null,
     price_source: '',
     created_by: ''
   }
@@ -821,8 +838,8 @@ const createNewRow = () => ({
   billing_type: 'tokens',
   channel_type: '',
   currency: 'USD',
-  input_price: 0,
-  output_price: 0,
+  input_price: null,
+  output_price: null,
   price_source: '',
   created_by: props.user?.username || ''
 })
@@ -1025,6 +1042,55 @@ watch(selectedModelType, () => {
   currentPage.value = 1 // 重置到第一页
   loadPrices()
 })
+
+// 复制行
+const duplicateRow = (index) => {
+  const newRow = { ...batchForms.value[index] }
+  batchForms.value.splice(index + 1, 0, newRow)
+}
+
+// 删除行
+const removeRow = (index) => {
+  batchForms.value.splice(index, 1)
+  if (batchForms.value.length === 0) {
+    addRow() // 如果删除后没有行了，添加一个空行
+  }
+}
+
+// 添加全部通过功能
+const approveAllPending = async () => {
+  try {
+    // 获取所有待审核的价格数量
+    const { data } = await axios.get('/api/prices', { params: { status: 'pending', pageSize: 1 } })
+    const pendingCount = data.total
+    
+    if (pendingCount === 0) {
+      ElMessage.info('当前没有待审核的价格')
+      return
+    }
+    
+    // 确认操作
+    await ElMessageBox.confirm(
+      `确定要通过所有 ${pendingCount} 条待审核价格吗？`,
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'success'
+      }
+    )
+    
+    // 批量更新所有待审核价格的状态
+    await axios.put('/api/prices/approve-all', { status: 'approved' })
+    
+    await loadPrices()
+    ElMessage.success('已通过所有待审核价格')
+  } catch (error) {
+    if (error === 'cancel') return
+    console.error('Failed to approve all pending prices:', error)
+    ElMessage.error('操作失败')
+  }
+}
 
 onMounted(() => {
   loadModelTypes()

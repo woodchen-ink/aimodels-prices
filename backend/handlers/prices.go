@@ -364,3 +364,85 @@ func GetPriceRates(c *gin.Context) {
 
 	c.JSON(http.StatusOK, rates)
 }
+
+// ApproveAllPrices 批量通过所有待审核的价格
+func ApproveAllPrices(c *gin.Context) {
+	var input struct {
+		Status string `json:"status" binding:"required,eq=approved"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := c.MustGet("db").(*sql.DB)
+	now := time.Now()
+
+	// 获取当前用户
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+	currentUser := user.(*models.User)
+
+	// 只有管理员可以批量通过
+	if currentUser.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin permission required"})
+		return
+	}
+
+	// 查询待审核的价格数量
+	var pendingCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM price WHERE status = 'pending'").Scan(&pendingCount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count pending prices"})
+		return
+	}
+
+	if pendingCount == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No pending prices to approve",
+			"count":   0,
+		})
+		return
+	}
+
+	// 批量更新所有待审核的价格
+	result, err := db.Exec(`
+		UPDATE price 
+		SET model = COALESCE(temp_model, model),
+			model_type = COALESCE(temp_model_type, model_type),
+			billing_type = COALESCE(temp_billing_type, billing_type),
+			channel_type = COALESCE(temp_channel_type, channel_type),
+			currency = COALESCE(temp_currency, currency),
+			input_price = COALESCE(temp_input_price, input_price),
+			output_price = COALESCE(temp_output_price, output_price),
+			price_source = COALESCE(temp_price_source, price_source),
+			status = ?,
+			updated_at = ?,
+			temp_model = NULL,
+			temp_model_type = NULL,
+			temp_billing_type = NULL,
+			temp_channel_type = NULL,
+			temp_currency = NULL,
+			temp_input_price = NULL,
+			temp_output_price = NULL,
+			temp_price_source = NULL,
+			updated_by = NULL
+		WHERE status = 'pending'`, input.Status, now)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve all prices"})
+		return
+	}
+
+	updatedCount, _ := result.RowsAffected()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "All pending prices approved successfully",
+		"count":      updatedCount,
+		"updated_at": now,
+	})
+}
