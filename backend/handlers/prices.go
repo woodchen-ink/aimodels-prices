@@ -118,6 +118,19 @@ func CreatePrice(c *gin.Context) {
 		return
 	}
 
+	// 检查同一厂商下是否已存在相同名称的模型
+	var modelExists bool
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM price WHERE channel_type = ? AND model = ? AND status = 'approved')",
+		price.ChannelType, price.Model).Scan(&modelExists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check model existence"})
+		return
+	}
+	if modelExists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Model with the same name already exists for this provider"})
+		return
+	}
+
 	now := time.Now()
 	result, err := db.Exec(`
 		INSERT INTO price (model, model_type, billing_type, channel_type, currency, input_price, output_price, 
@@ -226,6 +239,19 @@ func UpdatePrice(c *gin.Context) {
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM provider WHERE id = ?)", price.ChannelType).Scan(&providerExists)
 	if err != nil || !providerExists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid provider ID"})
+		return
+	}
+
+	// 检查同一厂商下是否已存在相同名称的模型（排除当前正在编辑的记录）
+	var modelExists bool
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM price WHERE channel_type = ? AND model = ? AND id != ? AND status = 'approved')",
+		price.ChannelType, price.Model, id).Scan(&modelExists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check model existence"})
+		return
+	}
+	if modelExists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Model with the same name already exists for this provider"})
 		return
 	}
 

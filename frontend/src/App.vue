@@ -9,6 +9,7 @@
           <div class="nav-buttons">
             <el-button @click="$router.push('/prices')" :type="$route.path === '/prices' ? 'primary' : ''">价格列表</el-button>
             <el-button @click="$router.push('/providers')" :type="$route.path === '/providers' ? 'primary' : ''">模型厂商</el-button>
+            <el-button @click="$router.push('/model-types')" :type="$route.path === '/model-types' ? 'primary' : ''">模型类别</el-button>
           </div>
         </div>
         <div class="auth-buttons">
@@ -35,7 +36,7 @@
 
     <el-footer height="60px">
       <div class="footer-content">
-        <p>© 2025 Q58 AI模型价格 | <a href="https://q58.club/t/topic/277?u=wood" target="_blank">介绍帖子</a></p>
+        <p>© 2025 Q58 AI模型价格 | <a href="https://www.q58.club/t/topic/277?u=wood" target="_blank">介绍帖子</a></p>
       </div>
     </el-footer>
   </el-container>

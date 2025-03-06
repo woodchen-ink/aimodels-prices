@@ -94,7 +94,9 @@ func main() {
 		modelTypes := api.Group("/model-types")
 		{
 			modelTypes.GET("", handlers.GetModelTypes)
-			modelTypes.POST("", middleware.AuthRequired(), handlers.CreateModelType)
+			modelTypes.POST("", middleware.AuthRequired(), middleware.AdminRequired(), handlers.CreateModelType)
+			modelTypes.PUT("/:key", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdateModelType)
+			modelTypes.DELETE("/:key", middleware.AuthRequired(), middleware.AdminRequired(), handlers.DeleteModelType)
 		}
 	}
 
