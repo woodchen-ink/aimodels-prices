@@ -9,7 +9,7 @@ import (
 type User struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
 	Username  string         `json:"username" gorm:"not null;unique"`
-	Email     string         `json:"email" gorm:"not null"`
+	Email     string         `json:"email" gorm:"not null;type:varchar(191)"`
 	Role      string         `json:"role" gorm:"not null;default:user"` // admin or user
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
