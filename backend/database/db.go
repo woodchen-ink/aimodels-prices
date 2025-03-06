@@ -142,7 +142,7 @@ func InitDB(cfg *config.Config) error {
 
 	// 连接MySQL
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to MySQL: %v", err)
