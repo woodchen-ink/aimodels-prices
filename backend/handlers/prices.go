@@ -19,6 +19,7 @@ func GetPrices(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
 	channelType := c.Query("channel_type") // 厂商筛选参数
 	modelType := c.Query("model_type")     // 模型类型筛选参数
+	searchQuery := c.Query("search")       // 搜索查询参数
 
 	if page < 1 {
 		page = 1
@@ -30,8 +31,8 @@ func GetPrices(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 构建缓存键
-	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s",
-		page, pageSize, channelType, modelType)
+	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s_search_%s",
+		page, pageSize, channelType, modelType, searchQuery)
 
 	// 尝试从缓存获取
 	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
@@ -51,10 +52,14 @@ func GetPrices(c *gin.Context) {
 	if modelType != "" {
 		query = query.Where("model_type = ?", modelType)
 	}
+	// 添加搜索条件
+	if searchQuery != "" {
+		query = query.Where("model LIKE ?", "%"+searchQuery+"%")
+	}
 
 	// 获取总数 - 使用缓存优化
 	var total int64
-	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s", channelType, modelType)
+	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s_search_%s", channelType, modelType, searchQuery)
 
 	if cachedTotal, found := database.GlobalCache.Get(totalCacheKey); found {
 		if t, ok := cachedTotal.(int64); ok {

@@ -22,6 +22,21 @@
         </div>
       </template>
 
+      <!-- 添加搜索框 -->
+      <div class="search-section">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索模型名称"
+          clearable
+          prefix-icon="Search"
+          @input="handleSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+      </div>
+
       <div class="filter-section">
         <div class="filter-label">厂商筛选:</div>
         <div class="provider-filters">
@@ -502,7 +517,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { Edit, Delete, Check, Close, Document } from '@element-plus/icons-vue'
+import { Edit, Delete, Check, Close, Document, Search } from '@element-plus/icons-vue'
 
 const props = defineProps({
   user: Object
@@ -524,6 +539,7 @@ const form = ref({
 const router = useRouter()
 const selectedProvider = ref('')
 const selectedModelType = ref('')
+const searchQuery = ref('')
 
 const isAdmin = computed(() => props.user?.role === 'admin')
 
@@ -588,6 +604,10 @@ const loadPrices = async () => {
   if (selectedModelType.value) {
     params.model_type = selectedModelType.value
   }
+  // 添加搜索参数
+  if (searchQuery.value) {
+    params.search = searchQuery.value
+  }
   
   try {
     const [pricesRes, providersRes] = await Promise.all([
@@ -600,7 +620,7 @@ const loadPrices = async () => {
     providers.value = providersRes.data
     
     // 缓存数据
-    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}`
+    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}-${searchQuery.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.data,
       total: pricesRes.data.total
@@ -1058,6 +1078,19 @@ watch(selectedModelType, () => {
   loadPrices()
 })
 
+// 监听搜索查询变化
+watch(searchQuery, () => {
+  // 使用防抖处理，避免频繁请求
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    currentPage.value = 1 // 重置到第一页
+    loadPrices()
+  }, 300)
+})
+
+// 添加防抖定时器
+let searchDebounceTimer = null
+
 // 复制行
 const duplicateRow = (index) => {
   const newRow = { ...batchForms.value[index] }
@@ -1107,6 +1140,12 @@ const approveAllPending = async () => {
   }
 }
 
+// 处理搜索
+const handleSearch = () => {
+  currentPage.value = 1 // 重置到第一页
+  loadPrices()
+}
+
 onMounted(() => {
   loadModelTypes()
   loadPrices()
@@ -1135,6 +1174,11 @@ onMounted(() => {
 .filter-label {
   font-size: 14px;
   color: #606266;
+}
+
+.search-section {
+  margin: 16px 0;
+  max-width: 400px;
 }
 
 .provider-filters {
