@@ -697,10 +697,17 @@ const handleQuickEdit = (row) => {
 const submitForm = async () => {
   try {
     form.value.created_by = props.user.username
+    
+    // 创建一个新对象用于提交，将 channel_type 转换为数字类型
+    const formToSubmit = { ...form.value }
+    if (formToSubmit.channel_type) {
+      formToSubmit.channel_type = parseInt(formToSubmit.channel_type, 10)
+    }
+    
     let response
     if (editingPrice.value) {
       // 更新已存在的价格
-      response = await axios.put(`/api/prices/${editingPrice.value.id}`, form.value)
+      response = await axios.put(`/api/prices/${editingPrice.value.id}`, formToSubmit)
     } else {
       // 检查模型是否已存在
       const existingPrice = prices.value?.find(p => 
@@ -717,7 +724,7 @@ const submitForm = async () => {
             type: 'warning',
           }
         ).then(async () => {
-          response = await axios.put(`/api/prices/${existingPrice.id}`, form.value)
+          response = await axios.put(`/api/prices/${existingPrice.id}`, formToSubmit)
           handleSubmitResponse(response)
         }).catch(() => {
           // 用户取消更新
@@ -725,7 +732,7 @@ const submitForm = async () => {
         return
       }
       // 创建新价格
-      response = await axios.post('/api/prices', form.value)
+      response = await axios.post('/api/prices', formToSubmit)
     }
     handleSubmitResponse(response)
   } catch (error) {
@@ -896,7 +903,12 @@ const submitBatchForms = async () => {
   try {
     // 逐个提交数据
     for (const form of batchForms.value) {
-      await axios.post('/api/prices', form)
+      // 创建一个新对象用于提交，将 channel_type 转换为数字类型
+      const formToSubmit = { ...form }
+      if (formToSubmit.channel_type) {
+        formToSubmit.channel_type = parseInt(formToSubmit.channel_type, 10)
+      }
+      await axios.post('/api/prices', formToSubmit)
     }
     
     await loadPrices()
@@ -961,7 +973,7 @@ const handleImport = () => {
     return {
       model,
       billing_type,
-      channel_type: provider.id.toString(),
+      channel_type: parseInt(provider.id, 10), // 确保是数字类型
       currency: currencyCode,
       input_price: parseFloat(inputPrice),
       output_price: parseFloat(outputPrice),
