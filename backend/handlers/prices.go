@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"aimodels-prices/database"
+	"aimodels-prices/handlers/rates"
 	"aimodels-prices/models"
 )
 
@@ -355,97 +356,6 @@ func DeletePrice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Price deleted successfully"})
 }
 
-// PriceRate 价格倍率结构
-type PriceRate struct {
-	Model       string  `json:"model"`
-	ModelType   string  `json:"model_type"`
-	Type        string  `json:"type"`
-	ChannelType uint    `json:"channel_type"`
-	Input       float64 `json:"input"`
-	Output      float64 `json:"output"`
-}
-
-// GetPriceRates 获取价格倍率
-func GetPriceRates(c *gin.Context) {
-	cacheKey := "price_rates"
-
-	// 尝试从缓存获取
-	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
-		if rates, ok := cachedData.([]PriceRate); ok {
-			c.JSON(http.StatusOK, rates)
-			return
-		}
-	}
-
-	// 使用索引优化查询，只查询需要的字段
-	var prices []models.Price
-	if err := database.DB.Select("model, model_type, billing_type, channel_type, input_price, output_price").
-		Where("status = 'approved'").
-		Find(&prices).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
-		return
-	}
-
-	// 按模型分组 - 使用map优化
-	modelMap := make(map[string]map[uint]models.Price, len(prices)/2) // 预分配合理大小
-	for _, price := range prices {
-		if _, exists := modelMap[price.Model]; !exists {
-			modelMap[price.Model] = make(map[uint]models.Price, 5) // 假设每个模型有5个提供商
-		}
-		modelMap[price.Model][price.ChannelType] = price
-	}
-
-	// 预分配rates切片，减少内存分配
-	rates := make([]PriceRate, 0, len(prices))
-
-	// 计算倍率
-	for model, providers := range modelMap {
-		// 找出基准价格（通常是OpenAI的价格）
-		var basePrice models.Price
-		var found bool
-		if baseProvider, exists := providers[1]; exists { // 直接检查ID为1的提供商
-			basePrice = baseProvider
-			found = true
-		}
-
-		if !found {
-			continue
-		}
-
-		// 计算其他厂商相对于基准价格的倍率
-		for channelType, price := range providers {
-			if channelType == 1 {
-				continue // 跳过基准价格
-			}
-
-			// 计算输入和输出的倍率
-			inputRate := 0.0
-			if basePrice.InputPrice > 0 {
-				inputRate = price.InputPrice / basePrice.InputPrice
-			}
-
-			outputRate := 0.0
-			if basePrice.OutputPrice > 0 {
-				outputRate = price.OutputPrice / basePrice.OutputPrice
-			}
-
-			rates = append(rates, PriceRate{
-				Model:       model,
-				ModelType:   price.ModelType,
-				Type:        price.BillingType,
-				ChannelType: channelType,
-				Input:       inputRate,
-				Output:      outputRate,
-			})
-		}
-	}
-
-	// 存入缓存，有效期10分钟
-	database.GlobalCache.Set(cacheKey, rates, 10*time.Minute)
-
-	c.JSON(http.StatusOK, rates)
-}
-
 func ApproveAllPrices(c *gin.Context) {
 	// 查找所有待审核的价格
 	var pendingPrices []models.Price
@@ -527,4 +437,7 @@ func ApproveAllPrices(c *gin.Context) {
 func clearPriceCache() {
 	// 由于我们无法精确知道哪些缓存键与价格相关，所以清除所有缓存
 	database.GlobalCache.Clear()
+
+	// 同时清除价格倍率缓存
+	rates.ClearRatesCache()
 }

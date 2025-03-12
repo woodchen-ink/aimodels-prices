@@ -9,6 +9,7 @@ import (
 	"aimodels-prices/config"
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
+	"aimodels-prices/handlers/rates"
 	"aimodels-prices/middleware"
 )
 
@@ -56,7 +57,7 @@ func main() {
 		prices := api.Group("/prices")
 		{
 			prices.GET("", handlers.GetPrices)
-			prices.GET("/rates", handlers.GetPriceRates)
+			prices.GET("/rates", rates.GetPriceRates)
 			prices.POST("", middleware.AuthRequired(), handlers.CreatePrice)
 			prices.PUT("/:id", middleware.AuthRequired(), handlers.UpdatePrice)
 			prices.DELETE("/:id", middleware.AuthRequired(), handlers.DeletePrice)
