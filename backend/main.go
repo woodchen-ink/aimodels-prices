@@ -11,6 +11,7 @@ import (
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
 	"aimodels-prices/handlers/rates"
+	initTasks "aimodels-prices/init"
 	"aimodels-prices/middleware"
 )
 
@@ -25,6 +26,9 @@ func main() {
 	if err := database.InitDB(cfg); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+
+	// 运行初始化任务
+	initTasks.RunInitTasks()
 
 	// 设置gin模式
 	if gin.Mode() == gin.ReleaseMode {

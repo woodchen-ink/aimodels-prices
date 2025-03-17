@@ -246,64 +246,6 @@ func cachePriceRates() {
 		modelMap[price.Model][price.ChannelType] = price
 	}
 
-	// 计算倍率
-	type PriceRate struct {
-		Model       string  `json:"model"`
-		ModelType   string  `json:"model_type"`
-		Type        string  `json:"type"`
-		ChannelType uint    `json:"channel_type"`
-		Input       float64 `json:"input"`
-		Output      float64 `json:"output"`
-	}
-
-	var rates []PriceRate
-	for model, providers := range modelMap {
-		// 找出基准价格（通常是OpenAI的价格）
-		var basePrice models.Price
-		var found bool
-		for _, price := range providers {
-			if price.ChannelType == 1 { // 假设OpenAI的ID是1
-				basePrice = price
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			continue
-		}
-
-		// 计算其他厂商相对于基准价格的倍率
-		for channelType, price := range providers {
-			if channelType == 1 {
-				continue // 跳过基准价格
-			}
-
-			// 计算输入和输出的倍率
-			inputRate := 0.0
-			if basePrice.InputPrice > 0 {
-				inputRate = price.InputPrice / basePrice.InputPrice
-			}
-
-			outputRate := 0.0
-			if basePrice.OutputPrice > 0 {
-				outputRate = price.OutputPrice / basePrice.OutputPrice
-			}
-
-			rates = append(rates, PriceRate{
-				Model:       model,
-				ModelType:   price.ModelType,
-				Type:        price.BillingType,
-				ChannelType: channelType,
-				Input:       inputRate,
-				Output:      outputRate,
-			})
-		}
-	}
-
-	GlobalCache.Set("price_rates", rates, 10*time.Minute)
-	log.Printf("已缓存 %d 个价格倍率", len(rates))
-
 	// 缓存常用的价格查询
 	cachePriceQueries()
 }

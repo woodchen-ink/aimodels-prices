@@ -98,6 +98,9 @@ func UpdateOtherPrices() error {
 		modelDataMap[modelKey][isFree] = &modelData
 	}
 
+	// 创建一个集合用于跟踪已处理的模型，避免重复
+	processedModels := make(map[string]bool)
+
 	// 第二遍遍历，根据处理规则选择合适的模型数据
 	for modelKey, variants := range modelDataMap {
 		var modelData *ModelData
@@ -158,6 +161,19 @@ func UpdateOtherPrices() error {
 				log.Printf("修正Claude模型名称: %s -> %s", parts[1], modelName)
 			}
 		}
+
+		// 创建唯一标识符，用于避免同厂商同模型重复处理
+		uniqueModelKey := fmt.Sprintf("%d:%s", channelType, modelName)
+
+		// 检查是否已处理过这个模型
+		if processedModels[uniqueModelKey] {
+			log.Printf("跳过已处理的模型: %s (厂商: %s)", modelName, author)
+			skippedCount++
+			continue
+		}
+
+		// 标记此模型为已处理
+		processedModels[uniqueModelKey] = true
 
 		// 确定模型类型
 		modelType := determineModelType(modelData.Modality)
@@ -227,6 +243,19 @@ func UpdateOtherPrices() error {
 				skippedCount++
 			}
 		} else {
+			// 检查是否存在相同模型名称的待审核记录
+			var pendingCount int64
+			if err := db.Model(&models.Price{}).Where("model = ? AND channel_type = ? AND status = 'pending'",
+				modelName, channelType).Count(&pendingCount).Error; err != nil {
+				log.Printf("检查待审核记录失败 %s: %v", modelName, err)
+			}
+
+			if pendingCount > 0 {
+				log.Printf("已存在待审核的相同模型记录，跳过创建: %s (厂商: %s)", modelName, author)
+				skippedCount++
+				continue
+			}
+
 			// 使用processPrice函数处理创建
 			_, changed, err := handlers.ProcessPrice(price, nil, false, CreatedBy)
 			if err != nil {
