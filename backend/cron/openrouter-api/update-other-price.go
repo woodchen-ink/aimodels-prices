@@ -32,6 +32,7 @@ var blacklist = []string{
 	"claude-3-haiku",
 	"claude-3-opus",
 	"claude-3-sonnet",
+	":extended",
 }
 
 const (
