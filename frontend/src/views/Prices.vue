@@ -23,39 +23,28 @@
       </template>
 
       <!-- 添加搜索框 -->
-      <div class="search-section">
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索模型名称"
-          clearable
-          prefix-icon="Search"
-          @input="handleSearch"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
+      <div class="filter-section">
+        <div class="filter-label" style="min-width:80px;">搜索模型:</div>
+        <div>
+          <el-input v-model="searchQuery" placeholder="搜索模型名称" clearable prefix-icon="Search" @input="handleSearch">
+            <template #prefix>
+              <el-icon>
+                <Search />
+              </el-icon>
+            </template>
+          </el-input>
+        </div>
       </div>
 
       <div class="filter-section">
-        <div class="filter-label">厂商筛选:</div>
+        <div class="filter-label" style="min-width:80px;">厂商筛选:</div>
         <div class="provider-filters">
-          <el-button 
-            :type="!selectedProvider ? 'primary' : ''" 
-            @click="selectedProvider = ''"
-          >全部</el-button>
-          <el-button
-            v-for="provider in providers"
-            :key="provider.id"
+          <el-button :type="!selectedProvider ? 'primary' : ''" @click="selectedProvider = ''">全部</el-button>
+          <el-button v-for="provider in providers" :key="provider.id"
             :type="selectedProvider === provider.id.toString() ? 'primary' : ''"
-            @click="selectedProvider = provider.id.toString()"
-          >
+            @click="selectedProvider = provider.id.toString()">
             <div style="display: flex; align-items: center; gap: 8px">
-              <el-image
-                v-if="provider.icon"
-                :src="provider.icon"
-                style="width: 16px; height: 16px"
-              />
+              <el-image v-if="provider.icon" :src="provider.icon" style="width: 16px; height: 16px" />
               <span>{{ provider.name }}</span>
             </div>
           </el-button>
@@ -63,18 +52,11 @@
       </div>
 
       <div class="filter-section">
-        <div class="filter-label">模型类别:</div>
+        <div class="filter-label" style="min-width:80px;">模型类别:</div>
         <div class="model-type-filters">
-          <el-button 
-            :type="!selectedModelType ? 'primary' : ''" 
-            @click="selectedModelType = ''"
-          >全部</el-button>
-          <el-button
-            v-for="(label, key) in modelTypeMap"
-            :key="key"
-            :type="selectedModelType === key ? 'primary' : ''"
-            @click="selectedModelType = key"
-          >
+          <el-button :type="!selectedModelType ? 'primary' : ''" @click="selectedModelType = ''">全部</el-button>
+          <el-button v-for="(label, key) in modelTypeMap" :key="key" :type="selectedModelType === key ? 'primary' : ''"
+            @click="selectedModelType = key">
             {{ label }}
           </el-button>
         </div>
@@ -86,14 +68,9 @@
           <el-skeleton :rows="1" animated />
         </div>
       </template>
-      
-      <el-table 
-        :data="prices" 
-        style="width: 100%"
-        @selection-change="handlePriceSelectionChange"
-        v-loading="tableLoading"
-        element-loading-text="加载中..."
-      >
+
+      <el-table :data="prices" style="width: 100%" @selection-change="handlePriceSelectionChange"
+        v-loading="tableLoading" element-loading-text="加载中...">
         <el-table-column v-if="isAdmin" type="selection" width="55" />
         <el-table-column label="模型">
           <template #default="{ row }">
@@ -109,7 +86,8 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ getModelType(row.model_type) }}</span>
-              <el-tag v-if="row.temp_model_type && row.temp_model_type !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_model_type && row.temp_model_type !== 'NULL'" type="warning" size="small"
+                effect="light">
                 待审核: {{ getModelType(row.temp_model_type) }}
               </el-tag>
             </div>
@@ -119,7 +97,8 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ getBillingType(row.billing_type) }}</span>
-              <el-tag v-if="row.temp_billing_type && row.temp_billing_type !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_billing_type && row.temp_billing_type !== 'NULL'" type="warning" size="small"
+                effect="light">
                 待审核: {{ getBillingType(row.temp_billing_type) }}
               </el-tag>
             </div>
@@ -129,14 +108,12 @@
           <template #default="{ row }">
             <div class="value-container">
               <div style="display: flex; align-items: center; gap: 8px">
-                <el-image 
-                  v-if="getProvider(row.channel_type)?.icon"
-                  :src="getProvider(row.channel_type)?.icon"
-                  style="width: 24px; height: 24px"
-                />
+                <el-image v-if="getProvider(row.channel_type)?.icon" :src="getProvider(row.channel_type)?.icon"
+                  style="width: 24px; height: 24px" />
                 <span>{{ getProvider(row.channel_type)?.name || row.channel_type }}</span>
               </div>
-              <el-tag v-if="row.temp_channel_type && row.temp_channel_type !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_channel_type && row.temp_channel_type !== 'NULL'" type="warning" size="small"
+                effect="light">
                 待审核: {{ getProvider(row.temp_channel_type)?.name || row.temp_channel_type }}
               </el-tag>
             </div>
@@ -146,7 +123,8 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.currency }}</span>
-              <el-tag v-if="row.temp_currency && row.temp_currency !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag v-if="row.temp_currency && row.temp_currency !== 'NULL'" type="warning" size="small"
+                effect="light">
                 待审核: {{ row.temp_currency }}
               </el-tag>
             </div>
@@ -156,7 +134,9 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.input_price === 0 ? '免费' : row.input_price }}</span>
-              <el-tag v-if="row.temp_input_price !== null && row.temp_input_price !== undefined && row.temp_input_price !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag
+                v-if="row.temp_input_price !== null && row.temp_input_price !== undefined && row.temp_input_price !== 'NULL'"
+                type="warning" size="small" effect="light">
                 待审核: {{ row.temp_input_price === 0 ? '免费' : row.temp_input_price }}
               </el-tag>
             </div>
@@ -166,7 +146,9 @@
           <template #default="{ row }">
             <div class="value-container">
               <span>{{ row.output_price === 0 ? '免费' : row.output_price }}</span>
-              <el-tag v-if="row.temp_output_price !== null && row.temp_output_price !== undefined && row.temp_output_price !== 'NULL'" type="warning" size="small" effect="light">
+              <el-tag
+                v-if="row.temp_output_price !== null && row.temp_output_price !== undefined && row.temp_output_price !== 'NULL'"
+                type="warning" size="small" effect="light">
                 待审核: {{ row.temp_output_price === 0 ? '免费' : row.temp_output_price }}
               </el-tag>
             </div>
@@ -174,11 +156,7 @@
         </el-table-column>
         <el-table-column width="80">
           <template #default="{ row }">
-            <el-popover
-              placement="left"
-              :width="200"
-              trigger="hover"
-            >
+            <el-popover placement="left" :width="200" trigger="hover">
               <template #reference>
                 <el-button link type="primary">详情</el-button>
               </template>
@@ -191,7 +169,8 @@
                   <span class="detail-label">价格来源:</span>
                   <div class="detail-value">
                     <span>{{ row.price_source }}</span>
-                    <el-tag v-if="row.temp_price_source && row.temp_price_source !== 'NULL'" type="warning" size="small" effect="light">
+                    <el-tag v-if="row.temp_price_source && row.temp_price_source !== 'NULL'" type="warning" size="small"
+                      effect="light">
                       待审核: {{ row.temp_price_source }}
                     </el-tag>
                   </div>
@@ -210,44 +189,41 @@
               <template v-if="isAdmin">
                 <el-tooltip content="编辑" placement="top">
                   <el-button type="primary" link @click="handleEdit(row)">
-                    <el-icon><Edit /></el-icon>
+                    <el-icon>
+                      <Edit />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="删除" placement="top">
                   <el-button type="danger" link @click="handleDelete(row)">
-                    <el-icon><Delete /></el-icon>
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip :content="row.status === 'pending' ? '通过审核' : '已审核'" placement="top">
-                  <el-button 
-                    type="success" 
-                    link 
-                    @click="updateStatus(row.id, 'approved')" 
-                    :disabled="row.status !== 'pending'"
-                  >
-                    <el-icon><Check /></el-icon>
+                  <el-button type="success" link @click="updateStatus(row.id, 'approved')"
+                    :disabled="row.status !== 'pending'">
+                    <el-icon>
+                      <Check />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip :content="row.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
-                  <el-button 
-                    type="danger" 
-                    link 
-                    @click="updateStatus(row.id, 'rejected')" 
-                    :disabled="row.status !== 'pending'"
-                  >
-                    <el-icon><Close /></el-icon>
+                  <el-button type="danger" link @click="updateStatus(row.id, 'rejected')"
+                    :disabled="row.status !== 'pending'">
+                    <el-icon>
+                      <Close />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
               </template>
               <template v-else>
                 <el-tooltip :content="row.status === 'pending' ? '等待审核中' : '提交修改'" placement="top">
-                  <el-button 
-                    type="primary" 
-                    link
-                    @click="handleQuickEdit(row)"
-                    :disabled="row.status === 'pending'"
-                  >
-                    <el-icon><Edit /></el-icon>
+                  <el-button type="primary" link @click="handleQuickEdit(row)" :disabled="row.status === 'pending'">
+                    <el-icon>
+                      <Edit />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
               </template>
@@ -255,21 +231,15 @@
           </template>
         </el-table-column>
       </el-table>
-      
+
       <!-- 修改分页组件 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          :small="false"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        >
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+          :total="total" layout="total, sizes, prev, pager, next" :small="false" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange">
           <template #sizes>
-            <el-select v-model="pageSize" :options="[10, 20, 50, 100].map(item => ({ value: item, label: `${item} 条/页` }))">
+            <el-select v-model="pageSize"
+              :options="[10, 20, 50, 100].map(item => ({ value: item, label: `${item} 条/页` }))">
               <template #prefix>每页</template>
             </el-select>
           </template>
@@ -283,48 +253,39 @@
         <div class="batch-toolbar">
           <el-button type="primary" @click="addRow">添加行</el-button>
           <el-divider direction="vertical" />
-          <el-popover
-            placement="bottom"
-            :width="400"
-            trigger="click"
-          >
+          <el-popover placement="bottom" :width="400" trigger="click">
             <template #reference>
               <el-button type="success">从表格导入</el-button>
             </template>
             <div class="import-popover">
               <p class="import-tip">请粘贴表格数据（支持从Excel复制），每行格式为：</p>
               <p class="import-format">模型名称 计费类型 厂商 货币 输入价格 输出价格</p>
-              <el-input
-                v-model="importText"
-                type="textarea"
-                :rows="8"
-                placeholder="例如：
+              <el-input v-model="importText" type="textarea" :rows="8" placeholder="例如：
 dall-e-2 按Token收费 OpenAI 美元 16.000000 16.000000
-dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
-              />
+dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
               <div class="import-actions">
                 <el-button type="primary" @click="handleImport">导入</el-button>
               </div>
             </div>
           </el-popover>
         </div>
-        
-        <el-table
-          :data="batchForms"
-          style="width: 100%"
-          height="400"
-        >
+
+        <el-table :data="batchForms" style="width: 100%" height="400">
           <el-table-column label="操作" width="100">
             <template #default="{ row, $index }">
               <div class="row-actions">
                 <el-tooltip content="复制" placement="top">
                   <el-button type="primary" link @click="duplicateRow($index)">
-                    <el-icon><Document /></el-icon>
+                    <el-icon>
+                      <Document />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="删除" placement="top">
                   <el-button type="danger" link @click="removeRow($index)">
-                    <el-icon><Delete /></el-icon>
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
               </div>
@@ -337,19 +298,9 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-table-column>
           <el-table-column label="模型类型" width="120">
             <template #default="{ row }">
-              <el-select
-                v-model="row.model_type"
-                placeholder="请选择或输入"
-                allow-create
-                filterable
-                @create="handleModelTypeCreate"
-              >
-                <el-option
-                  v-for="(label, value) in modelTypeMap"
-                  :key="value"
-                  :label="label"
-                  :value="value"
-                />
+              <el-select v-model="row.model_type" placeholder="请选择或输入" allow-create filterable
+                @create="handleModelTypeCreate">
+                <el-option v-for="(label, value) in modelTypeMap" :key="value" :label="label" :value="value" />
               </el-select>
             </template>
           </el-table-column>
@@ -364,18 +315,10 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           <el-table-column label="模型厂商" width="180">
             <template #default="{ row }">
               <el-select v-model="row.channel_type" placeholder="请选择">
-                <el-option
-                  v-for="provider in providers"
-                  :key="provider.id"
-                  :label="provider.name"
-                  :value="provider.id.toString()"
-                >
+                <el-option v-for="provider in providers" :key="provider.id" :label="provider.name"
+                  :value="provider.id.toString()">
                   <div style="display: flex; align-items: center; gap: 8px">
-                    <el-image
-                      v-if="provider.icon"
-                      :src="provider.icon"
-                      style="width: 24px; height: 24px"
-                    />
+                    <el-image v-if="provider.icon" :src="provider.icon" style="width: 24px; height: 24px" />
                     <span>{{ provider.name }}</span>
                   </div>
                 </el-option>
@@ -392,12 +335,14 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-table-column>
           <el-table-column label="输入价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
+              <el-input-number v-model="row.input_price" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入价格" />
             </template>
           </el-table-column>
           <el-table-column label="输出价格(M)" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
+              <el-input-number v-model="row.output_price" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入价格" />
             </template>
           </el-table-column>
           <el-table-column label="价格来源" min-width="200" width="200">
@@ -418,11 +363,7 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
     </el-dialog>
 
     <!-- 现有的单个添加对话框 -->
-    <el-dialog 
-      v-model="dialogVisible" 
-      :title="editingPrice ? (isAdmin ? '编辑价格' : '提交价格修改') : '提交价格'" 
-      width="700px"
-    >
+    <el-dialog v-model="dialogVisible" :title="editingPrice ? (isAdmin ? '编辑价格' : '提交价格修改') : '提交价格'" width="700px">
       <el-form :model="form" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -432,19 +373,9 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-col>
           <el-col :span="12">
             <el-form-item label="模型类型">
-              <el-select
-                v-model="form.model_type"
-                placeholder="请选择或输入"
-                allow-create
-                filterable
-                @create="handleModelTypeCreate"
-              >
-                <el-option
-                  v-for="(label, value) in modelTypeMap"
-                  :key="value"
-                  :label="label"
-                  :value="value"
-                />
+              <el-select v-model="form.model_type" placeholder="请选择或输入" allow-create filterable
+                @create="handleModelTypeCreate">
+                <el-option v-for="(label, value) in modelTypeMap" :key="value" :label="label" :value="value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -459,18 +390,10 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           <el-col :span="12">
             <el-form-item label="模型厂商">
               <el-select v-model="form.channel_type" placeholder="请选择">
-                <el-option 
-                  v-for="provider in providers" 
-                  :key="provider.id" 
-                  :label="provider.name"
-                  :value="provider.id.toString()"
-                >
+                <el-option v-for="provider in providers" :key="provider.id" :label="provider.name"
+                  :value="provider.id.toString()">
                   <div style="display: flex; align-items: center; gap: 8px">
-                    <el-image 
-                      v-if="provider.icon"
-                      :src="provider.icon"
-                      style="width: 24px; height: 24px"
-                    />
+                    <el-image v-if="provider.icon" :src="provider.icon" style="width: 24px; height: 24px" />
                     <span>{{ provider.name }}</span>
                   </div>
                 </el-option>
@@ -487,12 +410,14 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000"
           </el-col>
           <el-col :span="12">
             <el-form-item label="输入价格(M)">
-              <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
+              <el-input-number v-model="form.input_price" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入价格" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="输出价格(M)">
-              <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" style="width: 100%" :controls="false" placeholder="请输入价格" />
+              <el-input-number v-model="form.output_price" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入价格" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -590,13 +515,13 @@ const cachedPrices = ref(new Map()) // 用于缓存数据
 
 const loadPrices = async () => {
   tableLoading.value = true
-  
+
   // 构建查询参数
   const params = {
     page: currentPage.value,
     pageSize: pageSize.value
   }
-  
+
   // 添加筛选参数
   if (selectedProvider.value) {
     params.channel_type = selectedProvider.value
@@ -608,24 +533,24 @@ const loadPrices = async () => {
   if (searchQuery.value) {
     params.search = searchQuery.value
   }
-  
+
   try {
     const [pricesRes, providersRes] = await Promise.all([
       axios.get('/api/prices', { params }),
       axios.get('/api/providers')
     ])
-    
+
     prices.value = pricesRes.data.data
     total.value = pricesRes.data.total
     providers.value = providersRes.data
-    
+
     // 缓存数据
     const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}-${searchQuery.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.data,
       total: pricesRes.data.total
     })
-    
+
     // 限制缓存大小
     if (cachedPrices.value.size > 10) {
       const firstKey = cachedPrices.value.keys().next().value
@@ -700,7 +625,7 @@ const handleQuickEdit = (row) => {
   }
   editingPrice.value = row
   // 复制现有数据作为修改建议的基础
-  form.value = { 
+  form.value = {
     model: row.model,
     model_type: row.model_type,
     billing_type: row.billing_type,
@@ -717,21 +642,21 @@ const handleQuickEdit = (row) => {
 const submitForm = async () => {
   try {
     form.value.created_by = props.user.username
-    
+
     // 创建一个新对象用于提交，将 channel_type 转换为数字类型
     const formToSubmit = { ...form.value }
     if (formToSubmit.channel_type) {
       formToSubmit.channel_type = parseInt(formToSubmit.channel_type, 10)
     }
-    
+
     let response
     if (editingPrice.value) {
       // 更新已存在的价格
       response = await axios.put(`/api/prices/${editingPrice.value.id}`, formToSubmit)
     } else {
       // 检查模型是否已存在
-      const existingPrice = prices.value?.find(p => 
-        p.model === form.value.model && 
+      const existingPrice = prices.value?.find(p =>
+        p.model === form.value.model &&
         p.channel_type === form.value.channel_type
       )
       if (existingPrice) {
@@ -840,7 +765,7 @@ const handleModelTypeCreate = async (value) => {
   if (existingKey) {
     return existingKey
   }
-  
+
   // 如果输入的是英文key，直接使用
   let type_key = value
   let type_label = value
@@ -910,10 +835,10 @@ const submitBatchForms = async () => {
   }
 
   // 验证数据
-  const invalidForms = batchForms.value.filter(form => 
+  const invalidForms = batchForms.value.filter(form =>
     !form.model || !form.channel_type || !form.price_source
   )
-  
+
   if (invalidForms.length) {
     ElMessage.error('请填写完整所有必填字段')
     return
@@ -930,7 +855,7 @@ const submitBatchForms = async () => {
       }
       await axios.post('/api/prices', formToSubmit)
     }
-    
+
     await loadPrices()
     batchDialogVisible.value = false
     ElMessage.success('批量添加成功')
@@ -966,7 +891,7 @@ const handleImport = () => {
     }
 
     const [model, billingType, providerName, currency, inputPrice, outputPrice] = parts
-    
+
     // 查找模型厂商ID
     const provider = providers.value.find(p => p.name === providerName)
     if (!provider) {
@@ -1109,14 +1034,19 @@ const removeRow = (index) => {
 const approveAllPending = async () => {
   try {
     // 获取所有待审核的价格数量
-    const { data } = await axios.get('/api/prices', { params: { status: 'pending', pageSize: 1 } })
+    const { data } = await axios.get('/api/prices', {
+      params: {
+        status: 'pending',
+        pageSize: 1
+      }
+    })
     const pendingCount = data.total
-    
+
     if (pendingCount === 0) {
       ElMessage.info('当前没有待审核的价格')
       return
     }
-    
+
     // 确认操作
     await ElMessageBox.confirm(
       `确定要通过所有 ${pendingCount} 条待审核价格吗？`,
@@ -1127,12 +1057,13 @@ const approveAllPending = async () => {
         type: 'success'
       }
     )
-    
+
     // 批量更新所有待审核价格的状态
-    await axios.put('/api/prices/approve-all', { status: 'approved' })
-    
+    const response = await axios.put('/api/prices/approve-all', { status: 'approved' })
+
     await loadPrices()
-    ElMessage.success('已通过所有待审核价格')
+    // 使用后端返回的实际审核数量
+    ElMessage.success(`已通过 ${response.data.count} 条待审核价格`)
   } catch (error) {
     if (error === 'cancel') return
     console.error('Failed to approve all pending prices:', error)
@@ -1174,11 +1105,6 @@ onMounted(() => {
 .filter-label {
   font-size: 14px;
   color: #606266;
-}
-
-.search-section {
-  margin: 16px 0;
-  max-width: 400px;
 }
 
 .provider-filters {
@@ -1325,6 +1251,7 @@ onMounted(() => {
   .el-loading-text {
     color: #409EFF;
   }
+
   .path {
     stroke: #409EFF;
   }
@@ -1355,25 +1282,25 @@ onMounted(() => {
     width: auto !important;
     margin: 0 8px;
   }
-  
+
   .el-select .el-input {
     width: 140px !important;
   }
-  
+
   .el-select-dropdown__item {
     padding-right: 15px;
   }
-  
+
   .el-pagination__sizes {
     margin-right: 15px;
   }
-  
+
   /* 修复选择框宽度问题 */
   .el-select__wrapper {
     min-width: 140px !important;
     width: auto !important;
   }
-  
+
   /* 确保下拉菜单也足够宽 */
   .el-select__popper {
     min-width: 140px !important;
@@ -1425,4 +1352,4 @@ onMounted(() => {
 .el-select-dropdown {
   min-width: 140px !important;
 }
-</style> 
+</style>

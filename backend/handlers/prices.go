@@ -20,6 +20,7 @@ func GetPrices(c *gin.Context) {
 	channelType := c.Query("channel_type") // 厂商筛选参数
 	modelType := c.Query("model_type")     // 模型类型筛选参数
 	searchQuery := c.Query("search")       // 搜索查询参数
+	status := c.Query("status")            // 状态筛选参数
 
 	if page < 1 {
 		page = 1
@@ -31,8 +32,8 @@ func GetPrices(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 构建缓存键
-	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s_search_%s",
-		page, pageSize, channelType, modelType, searchQuery)
+	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s_search_%s_status_%s",
+		page, pageSize, channelType, modelType, searchQuery, status)
 
 	// 尝试从缓存获取
 	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
@@ -56,10 +57,15 @@ func GetPrices(c *gin.Context) {
 	if searchQuery != "" {
 		query = query.Where("model LIKE ?", "%"+searchQuery+"%")
 	}
+	// 添加状态筛选条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
 
 	// 获取总数 - 使用缓存优化
 	var total int64
-	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s_search_%s", channelType, modelType, searchQuery)
+	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s_search_%s_status_%s",
+		channelType, modelType, searchQuery, status)
 
 	if cachedTotal, found := database.GlobalCache.Get(totalCacheKey); found {
 		if t, ok := cachedTotal.(int64); ok {
@@ -97,6 +103,118 @@ func GetPrices(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// processPrice 处理价格的创建和更新逻辑
+func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool, username string) (models.Price, bool, error) {
+	// 如果是更新操作且存在现有记录
+	if existingPrice != nil {
+		// 检查价格是否有变化
+		if isAdmin {
+			// 管理员直接更新主字段，检查是否有实际变化
+			if existingPrice.Model == price.Model &&
+				existingPrice.ModelType == price.ModelType &&
+				existingPrice.BillingType == price.BillingType &&
+				existingPrice.ChannelType == price.ChannelType &&
+				existingPrice.Currency == price.Currency &&
+				existingPrice.InputPrice == price.InputPrice &&
+				existingPrice.OutputPrice == price.OutputPrice &&
+				existingPrice.PriceSource == price.PriceSource {
+				// 没有变化，不需要更新
+				return *existingPrice, false, nil
+			}
+
+			// 有变化，更新字段
+			existingPrice.Model = price.Model
+			existingPrice.ModelType = price.ModelType
+			existingPrice.BillingType = price.BillingType
+			existingPrice.ChannelType = price.ChannelType
+			existingPrice.Currency = price.Currency
+			existingPrice.InputPrice = price.InputPrice
+			existingPrice.OutputPrice = price.OutputPrice
+			existingPrice.PriceSource = price.PriceSource
+			existingPrice.Status = "approved"
+			existingPrice.UpdatedBy = &username
+			existingPrice.TempModel = nil
+			existingPrice.TempModelType = nil
+			existingPrice.TempBillingType = nil
+			existingPrice.TempChannelType = nil
+			existingPrice.TempCurrency = nil
+			existingPrice.TempInputPrice = nil
+			existingPrice.TempOutputPrice = nil
+			existingPrice.TempPriceSource = nil
+
+			// 保存更新
+			if err := database.DB.Save(existingPrice).Error; err != nil {
+				return *existingPrice, false, err
+			}
+			return *existingPrice, true, nil
+		} else {
+			// 普通用户更新临时字段，检查是否有实际变化
+			// 创建临时值的指针
+			modelPtr := &price.Model
+			modelTypePtr := &price.ModelType
+			billingTypePtr := &price.BillingType
+			channelTypePtr := &price.ChannelType
+			currencyPtr := &price.Currency
+			inputPricePtr := &price.InputPrice
+			outputPricePtr := &price.OutputPrice
+			priceSourcePtr := &price.PriceSource
+
+			// 检查临时字段与现有主字段是否相同
+			if (existingPrice.Model == price.Model &&
+				existingPrice.ModelType == price.ModelType &&
+				existingPrice.BillingType == price.BillingType &&
+				existingPrice.ChannelType == price.ChannelType &&
+				existingPrice.Currency == price.Currency &&
+				existingPrice.InputPrice == price.InputPrice &&
+				existingPrice.OutputPrice == price.OutputPrice &&
+				existingPrice.PriceSource == price.PriceSource) ||
+				// 或者检查临时字段与现有临时字段是否相同
+				(existingPrice.TempModel != nil && *existingPrice.TempModel == price.Model &&
+					existingPrice.TempModelType != nil && *existingPrice.TempModelType == price.ModelType &&
+					existingPrice.TempBillingType != nil && *existingPrice.TempBillingType == price.BillingType &&
+					existingPrice.TempChannelType != nil && *existingPrice.TempChannelType == price.ChannelType &&
+					existingPrice.TempCurrency != nil && *existingPrice.TempCurrency == price.Currency &&
+					existingPrice.TempInputPrice != nil && *existingPrice.TempInputPrice == price.InputPrice &&
+					existingPrice.TempOutputPrice != nil && *existingPrice.TempOutputPrice == price.OutputPrice &&
+					existingPrice.TempPriceSource != nil && *existingPrice.TempPriceSource == price.PriceSource) {
+				// 没有变化，不需要更新
+				return *existingPrice, false, nil
+			}
+
+			// 有变化，更新临时字段
+			existingPrice.TempModel = modelPtr
+			existingPrice.TempModelType = modelTypePtr
+			existingPrice.TempBillingType = billingTypePtr
+			existingPrice.TempChannelType = channelTypePtr
+			existingPrice.TempCurrency = currencyPtr
+			existingPrice.TempInputPrice = inputPricePtr
+			existingPrice.TempOutputPrice = outputPricePtr
+			existingPrice.TempPriceSource = priceSourcePtr
+			existingPrice.Status = "pending"
+			existingPrice.UpdatedBy = &username
+
+			// 保存更新
+			if err := database.DB.Save(existingPrice).Error; err != nil {
+				return *existingPrice, false, err
+			}
+			return *existingPrice, true, nil
+		}
+	} else {
+		// 创建新记录
+		price.Status = "pending"
+		if isAdmin {
+			price.Status = "approved"
+		}
+		price.CreatedBy = username
+
+		// 保存新记录
+		if err := database.DB.Create(&price).Error; err != nil {
+			return price, false, err
+		}
+		return price, true, nil
+	}
+}
+
 func CreatePrice(c *gin.Context) {
 	var price models.Price
 	if err := c.ShouldBindJSON(&price); err != nil {
@@ -123,19 +241,27 @@ func CreatePrice(c *gin.Context) {
 		return
 	}
 
-	// 设置状态和创建者
-	price.Status = "pending"
+	// 获取当前用户
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+	currentUser := user.(*models.User)
 
-	// 创建记录
-	if err := database.DB.Create(&price).Error; err != nil {
+	// 处理价格创建
+	result, changed, err := ProcessPrice(price, nil, currentUser.Role == "admin", currentUser.Username)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create price"})
 		return
 	}
 
 	// 清除所有价格相关缓存
-	clearPriceCache()
+	if changed {
+		clearPriceCache()
+	}
 
-	c.JSON(http.StatusCreated, price)
+	c.JSON(http.StatusCreated, result)
 }
 
 func UpdatePriceStatus(c *gin.Context) {
@@ -209,23 +335,36 @@ func UpdatePriceStatus(c *gin.Context) {
 			return
 		}
 	} else {
-		// 如果是拒绝，清除临时字段
-		if err := tx.Model(&price).Updates(map[string]interface{}{
-			"status":            input.Status,
-			"updated_at":        time.Now(),
-			"temp_model":        nil,
-			"temp_model_type":   nil,
-			"temp_billing_type": nil,
-			"temp_channel_type": nil,
-			"temp_currency":     nil,
-			"temp_input_price":  nil,
-			"temp_output_price": nil,
-			"temp_price_source": nil,
-			"updated_by":        nil,
-		}).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price status"})
-			return
+		// 如果是拒绝
+		// 检查是否是新创建的价格（没有原始价格）
+		isNewPrice := price.Model == "" || (price.TempModel != nil && price.Model == *price.TempModel)
+
+		if isNewPrice {
+			// 如果是新创建的价格，直接删除
+			if err := tx.Delete(&price).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rejected price"})
+				return
+			}
+		} else {
+			// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
+			if err := tx.Model(&price).Updates(map[string]interface{}{
+				"status":            "approved", // 恢复为已批准状态
+				"updated_at":        time.Now(),
+				"temp_model":        nil,
+				"temp_model_type":   nil,
+				"temp_billing_type": nil,
+				"temp_channel_type": nil,
+				"temp_currency":     nil,
+				"temp_input_price":  nil,
+				"temp_output_price": nil,
+				"temp_price_source": nil,
+				"updated_by":        nil,
+			}).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price status"})
+				return
+			}
 		}
 	}
 
@@ -239,11 +378,20 @@ func UpdatePriceStatus(c *gin.Context) {
 	// 清除所有价格相关缓存
 	clearPriceCache()
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":    "Status updated successfully",
-		"status":     input.Status,
-		"updated_at": time.Now(),
-	})
+	// 根据操作类型返回不同的消息
+	if input.Status == "rejected" && (price.Model == "" || (price.TempModel != nil && price.Model == *price.TempModel)) {
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Price rejected and deleted successfully",
+			"status":     input.Status,
+			"updated_at": time.Now(),
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Status updated successfully",
+			"status":     input.Status,
+			"updated_at": time.Now(),
+		})
+	}
 }
 
 func UpdatePrice(c *gin.Context) {
@@ -288,55 +436,19 @@ func UpdatePrice(c *gin.Context) {
 		return
 	}
 
-	// 根据用户角色决定更新方式
-	if currentUser.Role == "admin" {
-		// 管理员直接更新主字段
-		existingPrice.Model = price.Model
-		existingPrice.ModelType = price.ModelType
-		existingPrice.BillingType = price.BillingType
-		existingPrice.ChannelType = price.ChannelType
-		existingPrice.Currency = price.Currency
-		existingPrice.InputPrice = price.InputPrice
-		existingPrice.OutputPrice = price.OutputPrice
-		existingPrice.PriceSource = price.PriceSource
-		existingPrice.Status = "approved"
-		existingPrice.UpdatedBy = &currentUser.Username
-		existingPrice.TempModel = nil
-		existingPrice.TempModelType = nil
-		existingPrice.TempBillingType = nil
-		existingPrice.TempChannelType = nil
-		existingPrice.TempCurrency = nil
-		existingPrice.TempInputPrice = nil
-		existingPrice.TempOutputPrice = nil
-		existingPrice.TempPriceSource = nil
-
-		if err := database.DB.Save(&existingPrice).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price"})
-			return
-		}
-	} else {
-		// 普通用户更新临时字段
-		existingPrice.TempModel = &price.Model
-		existingPrice.TempModelType = &price.ModelType
-		existingPrice.TempBillingType = &price.BillingType
-		existingPrice.TempChannelType = &price.ChannelType
-		existingPrice.TempCurrency = &price.Currency
-		existingPrice.TempInputPrice = &price.InputPrice
-		existingPrice.TempOutputPrice = &price.OutputPrice
-		existingPrice.TempPriceSource = &price.PriceSource
-		existingPrice.Status = "pending"
-		existingPrice.UpdatedBy = &currentUser.Username
-
-		if err := database.DB.Save(&existingPrice).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price"})
-			return
-		}
+	// 处理价格更新
+	result, changed, err := ProcessPrice(price, &existingPrice, currentUser.Role == "admin", currentUser.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price"})
+		return
 	}
 
 	// 清除所有价格相关缓存
-	clearPriceCache()
+	if changed {
+		clearPriceCache()
+	}
 
-	c.JSON(http.StatusOK, existingPrice)
+	c.JSON(http.StatusOK, result)
 }
 
 func DeletePrice(c *gin.Context) {
@@ -362,6 +474,16 @@ func DeletePrice(c *gin.Context) {
 }
 
 func ApproveAllPrices(c *gin.Context) {
+	// 获取操作类型（批准或拒绝）
+	var input struct {
+		Action string `json:"action" binding:"required,oneof=approve reject"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid action, must be 'approve' or 'reject'"})
+		return
+	}
+
 	// 查找所有待审核的价格
 	var pendingPrices []models.Price
 	if err := database.DB.Where("status = 'pending'").Find(&pendingPrices).Error; err != nil {
@@ -371,54 +493,94 @@ func ApproveAllPrices(c *gin.Context) {
 
 	// 开始事务
 	tx := database.DB.Begin()
+	processedCount := 0
+	deletedCount := 0
 
 	for _, price := range pendingPrices {
-		updateMap := map[string]interface{}{
-			"status":     "approved",
-			"updated_at": time.Now(),
-		}
+		if input.Action == "approve" {
+			// 批准操作
+			updateMap := map[string]interface{}{
+				"status":     "approved",
+				"updated_at": time.Now(),
+			}
 
-		// 如果临时字段有值，则更新主字段
-		if price.TempModel != nil {
-			updateMap["model"] = *price.TempModel
-		}
-		if price.TempModelType != nil {
-			updateMap["model_type"] = *price.TempModelType
-		}
-		if price.TempBillingType != nil {
-			updateMap["billing_type"] = *price.TempBillingType
-		}
-		if price.TempChannelType != nil {
-			updateMap["channel_type"] = *price.TempChannelType
-		}
-		if price.TempCurrency != nil {
-			updateMap["currency"] = *price.TempCurrency
-		}
-		if price.TempInputPrice != nil {
-			updateMap["input_price"] = *price.TempInputPrice
-		}
-		if price.TempOutputPrice != nil {
-			updateMap["output_price"] = *price.TempOutputPrice
-		}
-		if price.TempPriceSource != nil {
-			updateMap["price_source"] = *price.TempPriceSource
-		}
+			// 如果临时字段有值，则更新主字段
+			if price.TempModel != nil {
+				updateMap["model"] = *price.TempModel
+			}
+			if price.TempModelType != nil {
+				updateMap["model_type"] = *price.TempModelType
+			}
+			if price.TempBillingType != nil {
+				updateMap["billing_type"] = *price.TempBillingType
+			}
+			if price.TempChannelType != nil {
+				updateMap["channel_type"] = *price.TempChannelType
+			}
+			if price.TempCurrency != nil {
+				updateMap["currency"] = *price.TempCurrency
+			}
+			if price.TempInputPrice != nil {
+				updateMap["input_price"] = *price.TempInputPrice
+			}
+			if price.TempOutputPrice != nil {
+				updateMap["output_price"] = *price.TempOutputPrice
+			}
+			if price.TempPriceSource != nil {
+				updateMap["price_source"] = *price.TempPriceSource
+			}
 
-		// 清除所有临时字段
-		updateMap["temp_model"] = nil
-		updateMap["temp_model_type"] = nil
-		updateMap["temp_billing_type"] = nil
-		updateMap["temp_channel_type"] = nil
-		updateMap["temp_currency"] = nil
-		updateMap["temp_input_price"] = nil
-		updateMap["temp_output_price"] = nil
-		updateMap["temp_price_source"] = nil
-		updateMap["updated_by"] = nil
+			// 清除所有临时字段
+			updateMap["temp_model"] = nil
+			updateMap["temp_model_type"] = nil
+			updateMap["temp_billing_type"] = nil
+			updateMap["temp_channel_type"] = nil
+			updateMap["temp_currency"] = nil
+			updateMap["temp_input_price"] = nil
+			updateMap["temp_output_price"] = nil
+			updateMap["temp_price_source"] = nil
+			updateMap["updated_by"] = nil
 
-		if err := tx.Model(&price).Updates(updateMap).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve prices"})
-			return
+			if err := tx.Model(&price).Updates(updateMap).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve prices"})
+				return
+			}
+			processedCount++
+		} else {
+			// 拒绝操作
+			// 检查是否是新创建的价格（没有原始价格）
+			isNewPrice := price.Model == "" || (price.TempModel != nil && price.Model == *price.TempModel)
+
+			if isNewPrice {
+				// 如果是新创建的价格，直接删除
+				if err := tx.Delete(&price).Error; err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rejected price"})
+					return
+				}
+				deletedCount++
+			} else {
+				// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
+				if err := tx.Model(&price).Updates(map[string]interface{}{
+					"status":            "approved", // 恢复为已批准状态
+					"updated_at":        time.Now(),
+					"temp_model":        nil,
+					"temp_model_type":   nil,
+					"temp_billing_type": nil,
+					"temp_channel_type": nil,
+					"temp_currency":     nil,
+					"temp_input_price":  nil,
+					"temp_output_price": nil,
+					"temp_price_source": nil,
+					"updated_by":        nil,
+				}).Error; err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject prices"})
+					return
+				}
+				processedCount++
+			}
 		}
 	}
 
@@ -432,10 +594,20 @@ func ApproveAllPrices(c *gin.Context) {
 	// 清除所有价格相关缓存
 	clearPriceCache()
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "All pending prices approved successfully",
-		"count":   len(pendingPrices),
-	})
+	// 根据操作类型返回不同的消息
+	if input.Action == "approve" {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "All pending prices approved successfully",
+			"count":   processedCount,
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message":   "All pending prices rejected successfully",
+			"processed": processedCount,
+			"deleted":   deletedCount,
+			"total":     processedCount + deletedCount,
+		})
+	}
 }
 
 // clearPriceCache 清除所有价格相关的缓存

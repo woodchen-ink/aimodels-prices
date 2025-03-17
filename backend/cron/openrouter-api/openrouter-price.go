@@ -8,9 +8,9 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"time"
 
 	"aimodels-prices/database"
+	"aimodels-prices/handlers"
 	"aimodels-prices/models"
 )
 
@@ -74,6 +74,8 @@ func FetchAndSavePrices() error {
 	}
 
 	// 处理每个模型的价格数据
+	processedCount := 0
+	skippedCount := 0
 	for _, modelData := range openRouterResp.Data {
 		// 确定模型类型
 		modelType := determineModelType(modelData.Modality)
@@ -87,6 +89,7 @@ func FetchAndSavePrices() error {
 			inputPrice, err = parsePrice(modelData.Endpoint.Pricing.Prompt)
 			if err != nil {
 				log.Printf("解析endpoint输入价格失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
 			}
 		} else if modelData.Pricing.Prompt != "" {
@@ -94,6 +97,7 @@ func FetchAndSavePrices() error {
 			inputPrice, err = parsePrice(modelData.Pricing.Prompt)
 			if err != nil {
 				log.Printf("解析输入价格失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
 			}
 		}
@@ -102,14 +106,30 @@ func FetchAndSavePrices() error {
 			outputPrice, err = parsePrice(modelData.Endpoint.Pricing.Completion)
 			if err != nil {
 				log.Printf("解析endpoint输出价格失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
 			}
 		} else if modelData.Pricing.Completion != "" {
 			outputPrice, err = parsePrice(modelData.Pricing.Completion)
 			if err != nil {
 				log.Printf("解析输出价格失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
 			}
+		}
+
+		// 创建价格对象
+		price := models.Price{
+			Model:       modelData.Slug,
+			ModelType:   modelType,
+			BillingType: BillingType,
+			ChannelType: ChannelType,
+			Currency:    Currency,
+			InputPrice:  inputPrice,
+			OutputPrice: outputPrice,
+			PriceSource: PriceSource,
+			Status:      Status,
+			CreatedBy:   CreatedBy,
 		}
 
 		// 检查是否已存在相同模型的价格记录
@@ -117,45 +137,41 @@ func FetchAndSavePrices() error {
 		result := db.Where("model = ? AND channel_type = ?", modelData.Slug, ChannelType).First(&existingPrice)
 
 		if result.Error == nil {
-			// 更新现有记录
-			existingPrice.ModelType = modelType
-			existingPrice.BillingType = BillingType
-			existingPrice.Currency = Currency
-			existingPrice.InputPrice = inputPrice
-			existingPrice.OutputPrice = outputPrice
-			existingPrice.PriceSource = PriceSource
-			existingPrice.Status = Status
-			existingPrice.UpdatedAt = time.Now()
-
-			if err := db.Save(&existingPrice).Error; err != nil {
+			// 使用processPrice函数处理更新
+			_, changed, err := handlers.ProcessPrice(price, &existingPrice, true, CreatedBy)
+			if err != nil {
 				log.Printf("更新价格记录失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
-			}
-			log.Printf("更新价格记录: %s", modelData.Slug)
-		} else {
-			// 创建新记录
-			newPrice := models.Price{
-				Model:       modelData.Slug,
-				ModelType:   modelType,
-				BillingType: BillingType,
-				ChannelType: ChannelType,
-				Currency:    Currency,
-				InputPrice:  inputPrice,
-				OutputPrice: outputPrice,
-				PriceSource: PriceSource,
-				Status:      Status,
-				CreatedBy:   CreatedBy,
 			}
 
-			if err := db.Create(&newPrice).Error; err != nil {
+			if changed {
+				log.Printf("更新价格记录: %s", modelData.Slug)
+				processedCount++
+			} else {
+				log.Printf("价格无变化，跳过更新: %s", modelData.Slug)
+				skippedCount++
+			}
+		} else {
+			// 使用processPrice函数处理创建
+			_, changed, err := handlers.ProcessPrice(price, nil, true, CreatedBy)
+			if err != nil {
 				log.Printf("创建价格记录失败 %s: %v", modelData.Slug, err)
+				skippedCount++
 				continue
 			}
-			log.Printf("创建新价格记录: %s", modelData.Slug)
+
+			if changed {
+				log.Printf("创建新价格记录: %s", modelData.Slug)
+				processedCount++
+			} else {
+				log.Printf("价格创建失败: %s", modelData.Slug)
+				skippedCount++
+			}
 		}
 	}
 
-	log.Println("OpenRouter价格数据处理完成")
+	log.Printf("OpenRouter价格数据处理完成，成功处理: %d, 跳过: %d", processedCount, skippedCount)
 	return nil
 }
 

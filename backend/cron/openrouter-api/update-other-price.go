@@ -8,9 +8,9 @@ import (
 
 	"encoding/json"
 	"strings"
-	"time"
 
 	"aimodels-prices/database"
+	"aimodels-prices/handlers"
 	"aimodels-prices/models"
 )
 
@@ -28,6 +28,11 @@ var blacklist = []string{
 	"shap-e",
 	"palm-2",
 	"o3-mini-high",
+	"claude-instant",
+	"claude-1",
+	"claude-3-haiku",
+	"claude-3-opus",
+	"claude-3-sonnet",
 }
 
 const (
@@ -94,6 +99,20 @@ func UpdateOtherPrices() error {
 				log.Printf("修正Google模型名称: %s -> %s", parts[1], modelName)
 			}
 		}
+		if author == "anthropic" {
+			// 处理claude-3.5-sonnet系列模型名称
+			if strings.HasPrefix(modelName, "claude-3.5") {
+				suffix := strings.TrimPrefix(modelName, "claude-3.5")
+				modelName = "claude-3-5" + suffix
+				log.Printf("修正Claude模型名称: %s -> %s", parts[1], modelName)
+			}
+
+			if strings.HasPrefix(modelName, "claude-3.7") {
+				suffix := strings.TrimPrefix(modelName, "claude-3.7")
+				modelName = "claude-3-7" + suffix
+				log.Printf("修正Claude模型名称: %s -> %s", parts[1], modelName)
+			}
+		}
 
 		// 确定模型类型
 		modelType := determineModelType(modelData.Modality)
@@ -102,19 +121,18 @@ func UpdateOtherPrices() error {
 		var inputPrice, outputPrice float64
 		var parseErr error
 
-		// 优先使用endpoint中的pricing
+		// 如果输入或输出价格为空，直接跳过
+		if modelData.Endpoint.Pricing.Prompt == "" || modelData.Endpoint.Pricing.Completion == "" {
+			log.Printf("跳过价格数据不完整的模型: %s", modelData.Slug)
+			skippedCount++
+			continue
+		}
+
+		// 使用endpoint中的pricing
 		if modelData.Endpoint.Pricing.Prompt != "" {
 			inputPrice, parseErr = parsePrice(modelData.Endpoint.Pricing.Prompt)
 			if parseErr != nil {
 				log.Printf("解析endpoint输入价格失败 %s: %v", modelData.Slug, parseErr)
-				skippedCount++
-				continue
-			}
-		} else if modelData.Pricing.Prompt != "" {
-			// 如果endpoint中没有，则使用顶层pricing
-			inputPrice, parseErr = parsePrice(modelData.Pricing.Prompt)
-			if parseErr != nil {
-				log.Printf("解析输入价格失败 %s: %v", modelData.Slug, parseErr)
 				skippedCount++
 				continue
 			}
@@ -127,13 +145,20 @@ func UpdateOtherPrices() error {
 				skippedCount++
 				continue
 			}
-		} else if modelData.Pricing.Completion != "" {
-			outputPrice, parseErr = parsePrice(modelData.Pricing.Completion)
-			if parseErr != nil {
-				log.Printf("解析输出价格失败 %s: %v", modelData.Slug, parseErr)
-				skippedCount++
-				continue
-			}
+		}
+
+		// 创建价格对象
+		price := models.Price{
+			Model:       modelName,
+			ModelType:   modelType,
+			BillingType: BillingType,
+			ChannelType: channelType,
+			Currency:    Currency,
+			InputPrice:  inputPrice,
+			OutputPrice: outputPrice,
+			PriceSource: OtherPriceSource,
+			Status:      OtherStatus,
+			CreatedBy:   CreatedBy,
 		}
 
 		// 检查是否已存在相同模型的价格记录
@@ -141,45 +166,37 @@ func UpdateOtherPrices() error {
 		result := db.Where("model = ? AND channel_type = ?", modelName, channelType).First(&existingPrice)
 
 		if result.Error == nil {
-			// 更新现有记录
-			existingPrice.ModelType = modelType
-			existingPrice.BillingType = BillingType
-			existingPrice.Currency = Currency
-			existingPrice.InputPrice = inputPrice
-			existingPrice.OutputPrice = outputPrice
-			existingPrice.PriceSource = OtherPriceSource
-			existingPrice.Status = OtherStatus
-			existingPrice.UpdatedAt = time.Now()
-
-			if err := db.Save(&existingPrice).Error; err != nil {
+			// 使用processPrice函数处理更新
+			_, changed, err := handlers.ProcessPrice(price, &existingPrice, false, CreatedBy)
+			if err != nil {
 				log.Printf("更新价格记录失败 %s: %v", modelName, err)
 				skippedCount++
 				continue
 			}
-			log.Printf("更新价格记录: %s (厂商: %s)", modelName, author)
-			processedCount++
-		} else {
-			// 创建新记录
-			newPrice := models.Price{
-				Model:       modelName,
-				ModelType:   modelType,
-				BillingType: BillingType,
-				ChannelType: channelType,
-				Currency:    Currency,
-				InputPrice:  inputPrice,
-				OutputPrice: outputPrice,
-				PriceSource: OtherPriceSource,
-				Status:      OtherStatus,
-				CreatedBy:   CreatedBy,
-			}
 
-			if err := db.Create(&newPrice).Error; err != nil {
+			if changed {
+				log.Printf("更新价格记录: %s (厂商: %s)", modelName, author)
+				processedCount++
+			} else {
+				log.Printf("价格无变化，跳过更新: %s (厂商: %s)", modelName, author)
+				skippedCount++
+			}
+		} else {
+			// 使用processPrice函数处理创建
+			_, changed, err := handlers.ProcessPrice(price, nil, false, CreatedBy)
+			if err != nil {
 				log.Printf("创建价格记录失败 %s: %v", modelName, err)
 				skippedCount++
 				continue
 			}
-			log.Printf("创建新价格记录: %s (厂商: %s)", modelName, author)
-			processedCount++
+
+			if changed {
+				log.Printf("创建新价格记录: %s (厂商: %s)", modelName, author)
+				processedCount++
+			} else {
+				log.Printf("价格创建失败: %s (厂商: %s)", modelName, author)
+				skippedCount++
+			}
 		}
 	}
 
