@@ -29,10 +29,10 @@ var blacklist = []string{
 	"o3-mini-high",
 	"claude-instant",
 	"claude-1",
+	"claude-2",
 	"claude-3-haiku",
 	"claude-3-opus",
 	"claude-3-sonnet",
-	":extended",
 }
 
 const (
@@ -60,68 +60,28 @@ func UpdateOtherPrices() error {
 	processedCount := 0
 	skippedCount := 0
 
-	// 创建一个映射，用于按作者和模型名称存储模型数据
-	// 键：作者/模型名称基础部分
-	// 值：带有free标识和不带free标识的模型数据
-	modelDataMap := make(map[string]map[bool]*ModelData)
+	// 创建一个集合用于跟踪已处理的模型，避免重复
+	processedModels := make(map[string]bool)
 
-	// 第一遍遍历，分类整理模型数据
+	// 一次遍历处理所有数据
 	for _, modelData := range resp.Data {
 		// 提取模型名称（slug中/后面的部分）
 		parts := strings.Split(modelData.Slug, "/")
 		if len(parts) < 2 {
 			log.Printf("跳过无效的模型名称: %s", modelData.Slug)
-			continue
-		}
-
-		author := parts[0]
-		fullModelName := parts[1]
-
-		// 判断是否带有":free"后缀
-		isFree := strings.HasSuffix(fullModelName, ":free")
-
-		// 提取基础模型名称（不带":free"后缀）
-		baseModelName := fullModelName
-		if isFree {
-			baseModelName = strings.TrimSuffix(fullModelName, ":free")
-		}
-
-		// 创建模型的唯一键
-		modelKey := author + "/" + baseModelName
-
-		// 如果需要，为这个模型键初始化一个条目
-		if _, exists := modelDataMap[modelKey]; !exists {
-			modelDataMap[modelKey] = make(map[bool]*ModelData)
-		}
-
-		// 存储模型数据
-		modelDataMap[modelKey][isFree] = &modelData
-	}
-
-	// 创建一个集合用于跟踪已处理的模型，避免重复
-	processedModels := make(map[string]bool)
-
-	// 第二遍遍历，根据处理规则选择合适的模型数据
-	for modelKey, variants := range modelDataMap {
-		var modelData *ModelData
-
-		// 优先选择非free版本
-		if nonFreeData, hasNonFree := variants[false]; hasNonFree {
-			modelData = nonFreeData
-		} else if freeData, hasFree := variants[true]; hasFree {
-			// 如果只有free版本，则使用free版本
-			modelData = freeData
-		} else {
-			// 不应该发生，但为了安全
-			log.Printf("处理模型数据异常: %s", modelKey)
 			skippedCount++
 			continue
 		}
 
-		// 提取模型名称
-		parts := strings.Split(modelData.Slug, "/")
-		modelName := strings.Split(parts[1], ":")[0] // 移除":free"后缀
 		author := parts[0]
+		modelName := parts[1]
+
+		// 直接跳过包含":free"或":extended"的模型
+		if strings.Contains(modelName, ":free") || strings.Contains(modelName, ":extended") {
+			log.Printf("跳过带特殊标记的模型: %s", modelData.Slug)
+			skippedCount++
+			continue
+		}
 
 		// 检查是否在黑名单中
 		if isInBlacklist(modelName) {
@@ -154,7 +114,7 @@ func UpdateOtherPrices() error {
 				modelName = "claude-3-5" + suffix
 				log.Printf("修正Claude模型名称: %s -> %s", parts[1], modelName)
 			}
-
+			// 处理claude-3.7-sonnet系列模型名称
 			if strings.HasPrefix(modelName, "claude-3.7") {
 				suffix := strings.TrimPrefix(modelName, "claude-3.7")
 				modelName = "claude-3-7" + suffix
@@ -305,10 +265,27 @@ func fetchOpenRouterData() (*OpenRouterResponse, error) {
 // isInBlacklist 检查模型名称是否在黑名单中
 func isInBlacklist(modelName string) bool {
 	modelNameLower := strings.ToLower(modelName)
+
+	// 记录黑名单匹配过程
+	log.Printf("检查模型是否在黑名单中: %s", modelNameLower)
+
 	for _, blacklistItem := range blacklist {
-		if strings.Contains(modelNameLower, blacklistItem) {
+		blacklistItemLower := strings.ToLower(blacklistItem)
+
+		// 1. 完全匹配 - 模型名称与黑名单项完全相同
+		if modelNameLower == blacklistItemLower {
+			log.Printf("模型【%s】完全匹配黑名单项【%s】", modelNameLower, blacklistItemLower)
+			return true
+		}
+
+		// 2. 包含匹配 - 模型名称中包含黑名单项
+		if strings.Contains(modelNameLower, blacklistItemLower) {
+			log.Printf("模型【%s】包含黑名单项【%s】", modelNameLower, blacklistItemLower)
 			return true
 		}
 	}
+
+	// 记录未匹配的情况
+	log.Printf("模型【%s】不在黑名单中", modelNameLower)
 	return false
 }
