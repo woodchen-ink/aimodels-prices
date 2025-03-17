@@ -18,7 +18,6 @@ import (
 var authorToChannelType = map[string]uint{
 	"openai":    1,
 	"anthropic": 14,
-	"qwen":      17,
 	"google":    25,
 	"x-ai":      1001,
 }
