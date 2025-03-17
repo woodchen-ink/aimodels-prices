@@ -62,6 +62,19 @@
         </div>
       </div>
 
+      <!-- 添加状态筛选 -->
+      <div class="filter-section">
+        <div class="filter-label" style="min-width:80px;">状态筛选:</div>
+        <div class="status-filters">
+          <el-button :type="!selectedStatus ? 'primary' : ''" @click="selectedStatus = ''">全部</el-button>
+          <el-button v-for="(status, key) in statusMap" :key="key" 
+            :type="selectedStatus === key ? 'primary' : ''"
+            @click="selectedStatus = key">
+            {{ status }}
+          </el-button>
+        </div>
+      </div>
+
       <!-- 添加骨架屏 -->
       <template v-if="loading">
         <div v-for="i in 5" :key="i" class="skeleton-row">
@@ -202,7 +215,7 @@
                   </el-button>
                 </el-tooltip>
                 <el-tooltip :content="row.status === 'pending' ? '通过审核' : '已审核'" placement="top">
-                  <el-button type="success" link @click="updateStatus(row.id, 'approved')"
+                  <el-button type="success" link @click="updateStatus(row.id, 'approve')"
                     :disabled="row.status !== 'pending'">
                     <el-icon>
                       <Check />
@@ -210,7 +223,7 @@
                   </el-button>
                 </el-tooltip>
                 <el-tooltip :content="row.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
-                  <el-button type="danger" link @click="updateStatus(row.id, 'rejected')"
+                  <el-button type="danger" link @click="updateStatus(row.id, 'rejecte')"
                     :disabled="row.status !== 'pending'">
                     <el-icon>
                       <Close />
@@ -464,6 +477,7 @@ const form = ref({
 const router = useRouter()
 const selectedProvider = ref('')
 const selectedModelType = ref('')
+const selectedStatus = ref('')
 const searchQuery = ref('')
 
 const isAdmin = computed(() => props.user?.role === 'admin')
@@ -529,6 +543,10 @@ const loadPrices = async () => {
   if (selectedModelType.value) {
     params.model_type = selectedModelType.value
   }
+  // 添加状态筛选参数
+  if (selectedStatus.value) {
+    params.status = selectedStatus.value
+  }
   // 添加搜索参数
   if (searchQuery.value) {
     params.search = searchQuery.value
@@ -545,7 +563,7 @@ const loadPrices = async () => {
     providers.value = providersRes.data
 
     // 缓存数据
-    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}-${searchQuery.value}`
+    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}-${selectedStatus.value}-${searchQuery.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.data,
       total: pricesRes.data.total
@@ -991,7 +1009,7 @@ const handleCurrentChange = (val) => {
   loadPrices()
 }
 
-// 当选择厂商时重新加载数据
+// 监听厂商选择变化
 watch(selectedProvider, () => {
   currentPage.value = 1 // 重置到第一页
   loadPrices()
@@ -999,6 +1017,12 @@ watch(selectedProvider, () => {
 
 // 监听模型类型选择变化
 watch(selectedModelType, () => {
+  currentPage.value = 1 // 重置到第一页
+  loadPrices()
+})
+
+// 监听状态选择变化
+watch(selectedStatus, () => {
   currentPage.value = 1 // 重置到第一页
   loadPrices()
 })
@@ -1108,6 +1132,13 @@ onMounted(() => {
 }
 
 .provider-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
