@@ -214,16 +214,16 @@
                     </el-icon>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip :content="row.status === 'pending' ? '通过审核' : '已审核'" placement="top">
-                  <el-button type="success" link @click="updateStatus(row.id, 'approve')"
-                    :disabled="row.status !== 'pending'">
+                <el-tooltip :content="row.status === 'pending' ? '通过审核' : (row.status === 'rejected' ? '重新审核通过' : '已审核')" placement="top">
+                  <el-button type="success" link @click="updateStatus(row.id, 'approved')"
+                    :disabled="row.status !== 'pending' && row.status !== 'rejected'">
                     <el-icon>
                       <Check />
                     </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip :content="row.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
-                  <el-button type="danger" link @click="updateStatus(row.id, 'rejecte')"
+                  <el-button type="danger" link @click="updateStatus(row.id, 'rejected')"
                     :disabled="row.status !== 'pending'">
                     <el-icon>
                       <Close />
@@ -964,17 +964,26 @@ const batchUpdateStatus = async (status) => {
     return
   }
 
-  // 过滤出待审核的价格
-  const pendingPrices = selectedPrices.value.filter(price => price.status === 'pending')
-  if (!pendingPrices.length) {
-    ElMessage.warning('选中的价格中没有待审核的项目')
+  let statusFilter = ['pending']
+  let statusLabel = '待审核'
+  
+  // 如果是通过状态，也可以选择已拒绝的价格
+  if (status === 'approved') {
+    statusFilter = ['pending', 'rejected']
+    statusLabel = '待审核或已拒绝'
+  }
+  
+  // 过滤出符合条件的价格
+  const filteredPrices = selectedPrices.value.filter(price => statusFilter.includes(price.status))
+  if (!filteredPrices.length) {
+    ElMessage.warning(`选中的价格中没有${statusLabel}的项目`)
     return
   }
 
   try {
     // 确认操作
     await ElMessageBox.confirm(
-      `确定要${status === 'approved' ? '通过' : '拒绝'}选中的 ${pendingPrices.length} 条待审核价格吗？`,
+      `确定要${status === 'approved' ? '通过' : '拒绝'}选中的 ${filteredPrices.length} 条${statusLabel}价格吗？`,
       '提示',
       {
         confirmButtonText: '确定',
@@ -984,7 +993,7 @@ const batchUpdateStatus = async (status) => {
     )
 
     // 批量更新状态
-    for (const price of pendingPrices) {
+    for (const price of filteredPrices) {
       await axios.put(`/api/prices/${price.id}/status`, { status })
     }
 
@@ -1083,7 +1092,7 @@ const approveAllPending = async () => {
     )
 
     // 批量更新所有待审核价格的状态
-    const response = await axios.put('/api/prices/approve-all', { status: 'approved' })
+    const response = await axios.put('/api/prices/approve-all', { action: 'approve' })
 
     await loadPrices()
     // 使用后端返回的实际审核数量
