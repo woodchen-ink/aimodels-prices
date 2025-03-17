@@ -20,8 +20,13 @@
         </ul>
 
         <h2>交流讨论</h2>
-        <p>请在帖子下留言: <a href="https://q58.club/t/topic/277?u=wood" target="_blank">https://q58.club/t/topic/277</a></p>
+        <p>请在帖子下留言: <a href="https://www.q58.club/t/topic/277" target="_blank">https://www.q58.club/t/topic/277</a></p>
 
+        <h2>免责声明</h2>
+        <p>
+          <b>所有价格信息仅供参考，不保证100%准确性,及时性, 完整性, 价格由人工编辑+API自动更新, 所以可能有误差, 具体价格以实际为准。</b>
+        </p>
+        
         <h2>API文档</h2>
         <el-collapse>
           <el-collapse-item title="One-Hub 价格倍率">

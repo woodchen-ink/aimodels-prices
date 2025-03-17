@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"aimodels-prices/config"
+	"aimodels-prices/cron"
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
 	"aimodels-prices/handlers/rates"
@@ -29,6 +30,10 @@ func main() {
 	if gin.Mode() == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	// 初始化并启动定时任务
+	cron.InitCronJobs()
+	defer cron.StopCronJobs()
 
 	r := gin.Default()
 
