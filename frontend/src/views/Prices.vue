@@ -10,6 +10,7 @@
             <template v-if="isAdmin && selectedPrices.length > 0">
               <el-button type="success" @click="batchUpdateStatus('approved')">批量通过</el-button>
               <el-button type="danger" @click="batchUpdateStatus('rejected')">批量拒绝</el-button>
+              <el-button type="danger" @click="batchDelete">批量删除</el-button>
               <el-divider direction="vertical" />
             </template>
             <template v-if="isAdmin">
@@ -1003,6 +1004,39 @@ const batchUpdateStatus = async (status) => {
     if (error === 'cancel') return
     console.error('Failed to batch update status:', error)
     ElMessage.error('批量审核失败')
+  }
+}
+
+// 批量删除价格记录
+const batchDelete = async () => {
+  if (!selectedPrices.value.length) {
+    ElMessage.warning('请先选择要删除的价格')
+    return
+  }
+
+  try {
+    // 确认操作
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedPrices.value.length} 条价格吗？此操作不可恢复！`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    // 批量删除
+    for (const price of selectedPrices.value) {
+      await axios.delete(`/api/prices/${price.id}`)
+    }
+
+    await loadPrices()
+    ElMessage.success('批量删除成功')
+  } catch (error) {
+    if (error === 'cancel') return
+    console.error('Failed to batch delete prices:', error)
+    ElMessage.error('批量删除失败')
   }
 }
 
