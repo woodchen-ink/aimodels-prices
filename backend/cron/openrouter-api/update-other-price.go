@@ -33,6 +33,7 @@ var blacklist = []string{
 	"claude-3-haiku",
 	"claude-3-opus",
 	"claude-3-sonnet",
+	":",
 }
 
 const (
@@ -75,13 +76,6 @@ func UpdateOtherPrices() error {
 
 		author := parts[0]
 		modelName := parts[1]
-
-		// 直接跳过包含":free"或":extended"的模型
-		if strings.Contains(modelName, ":free") || strings.Contains(modelName, ":extended") {
-			log.Printf("跳过带特殊标记的模型: %s", modelData.Slug)
-			skippedCount++
-			continue
-		}
 
 		// 检查是否在黑名单中
 		if isInBlacklist(modelName) {
