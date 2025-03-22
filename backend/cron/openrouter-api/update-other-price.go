@@ -35,6 +35,7 @@ var blacklist = []string{
 	"claude-3-opus",
 	"claude-3-sonnet",
 	":",
+	"gemma-7b-it",
 }
 
 const (
