@@ -20,7 +20,7 @@ func InitCronJobs() {
 
 	// 注册OpenRouter价格获取任务
 	// 每24小时执行一次
-	_, err := cronScheduler.AddFunc("0 0 0 * * *", func() {
+	_, err := cronScheduler.AddFunc("4 6 * * *", func() {
 		if err := openrouter_api.FetchAndSavePrices(); err != nil {
 			log.Printf("OpenRouter价格获取任务执行失败: %v", err)
 		}
@@ -32,7 +32,7 @@ func InitCronJobs() {
 
 	// 注册其他厂商价格更新任务
 	// 每24小时执行一次，错开时间避免同时执行
-	_, err = cronScheduler.AddFunc("0 30 0 * * *", func() {
+	_, err = cronScheduler.AddFunc("30 6 * * *", func() {
 		if err := openrouter_api.UpdateOtherPrices(); err != nil {
 			log.Printf("其他厂商价格更新任务执行失败: %v", err)
 		}

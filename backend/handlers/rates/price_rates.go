@@ -34,7 +34,7 @@ func GetPriceRates(c *gin.Context) {
 
 	// 使用索引优化查询，只查询需要的字段
 	var prices []models.Price
-	if err := database.DB.Select("model, model_type, billing_type, channel_type, input_price, output_price, currency, status").
+	if err := database.DB.Select("model, billing_type, channel_type, input_price, output_price, currency, status").
 		Where("status = 'approved'").
 		Find(&prices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
@@ -61,7 +61,6 @@ func GetPriceRates(c *gin.Context) {
 
 		rates = append(rates, PriceRate{
 			Model:       price.Model,
-			ModelType:   price.ModelType,
 			Type:        price.BillingType,
 			ChannelType: price.ChannelType,
 			Input:       inputRate,

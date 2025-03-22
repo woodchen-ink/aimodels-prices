@@ -103,7 +103,7 @@ func GetPrices(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// processPrice 处理价格的创建和更新逻辑
+// processPrice 处理价格的创建和更新逻辑,只负责处理业务逻辑
 func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool, username string) (models.Price, bool, error) {
 	// 如果是更新操作且存在现有记录
 	if existingPrice != nil {
@@ -212,6 +212,7 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			return price, false, err
 		}
 		return price, true, nil
+
 	}
 }
 
