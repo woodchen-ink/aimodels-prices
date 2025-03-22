@@ -7,6 +7,7 @@ import (
 	"github.com/robfig/cron/v3"
 
 	openrouter_api "aimodels-prices/cron/openrouter-api"
+	siliconflow_api "aimodels-prices/cron/siliconflow-api"
 )
 
 var cronScheduler *cron.Cron
@@ -42,6 +43,18 @@ func InitCronJobs() {
 		log.Printf("注册其他厂商价格更新任务失败: %v", err)
 	}
 
+	// 注册SiliconFlow价格更新任务
+	// 每24小时执行一次，错开时间避免同时执行
+	_, err = cronScheduler.AddFunc("0 7 * * *", func() {
+		if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
+			log.Printf("SiliconFlow价格更新任务执行失败: %v", err)
+		}
+	})
+
+	if err != nil {
+		log.Printf("注册SiliconFlow价格更新任务失败: %v", err)
+	}
+
 	// 启动定时任务
 	cronScheduler.Start()
 	log.Println("定时任务已启动")
@@ -60,6 +73,13 @@ func InitCronJobs() {
 		log.Println("立即执行其他厂商价格更新任务...")
 		if err := openrouter_api.UpdateOtherPrices(); err != nil {
 			log.Printf("初始其他厂商价格更新任务执行失败: %v", err)
+		}
+
+		// 等待几秒后执行SiliconFlow价格更新任务
+		time.Sleep(3 * time.Second)
+		log.Println("立即执行SiliconFlow价格更新任务...")
+		if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
+			log.Printf("初始SiliconFlow价格更新任务执行失败: %v", err)
 		}
 	}()
 }
