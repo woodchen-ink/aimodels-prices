@@ -13,7 +13,6 @@ import (
 // PriceRate 价格倍率结构
 type PriceRate struct {
 	Model       string  `json:"model"`
-	ModelType   string  `json:"model_type"`
 	Type        string  `json:"type"`
 	ChannelType uint    `json:"channel_type"`
 	Input       float64 `json:"input"`
