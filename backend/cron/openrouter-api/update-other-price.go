@@ -89,7 +89,7 @@ func UpdateOtherPrices() error {
 		// 检查是否支持的厂商
 		channelType, ok := authorToChannelType[author]
 		if !ok {
-			log.Printf("跳过不支持的厂商: %s", author)
+			// log.Printf("跳过不支持的厂商: %s", author)
 			skippedCount++
 			continue
 		}
@@ -123,7 +123,7 @@ func UpdateOtherPrices() error {
 
 		// 检查是否已处理过这个模型
 		if processedModels[uniqueModelKey] {
-			log.Printf("跳过已处理的模型: %s (厂商: %s)", modelName, author)
+			// log.Printf("跳过已处理的模型: %s (厂商: %s)", modelName, author)
 			skippedCount++
 			continue
 		}
@@ -195,7 +195,7 @@ func UpdateOtherPrices() error {
 				log.Printf("更新价格记录: %s (厂商: %s)", modelName, author)
 				processedCount++
 			} else {
-				log.Printf("价格无变化，跳过更新: %s (厂商: %s)", modelName, author)
+				// log.Printf("价格无变化，跳过更新: %s (厂商: %s)", modelName, author)
 				skippedCount++
 			}
 		} else {
@@ -207,7 +207,7 @@ func UpdateOtherPrices() error {
 			}
 
 			if pendingCount > 0 {
-				log.Printf("已存在待审核的相同模型记录，跳过创建: %s (厂商: %s)", modelName, author)
+				// log.Printf("已存在待审核的相同模型记录，跳过创建: %s (厂商: %s)", modelName, author)
 				skippedCount++
 				continue
 			}
@@ -221,7 +221,7 @@ func UpdateOtherPrices() error {
 			}
 
 			if changed {
-				log.Printf("创建新价格记录: %s (厂商: %s)", modelName, author)
+				// log.Printf("创建新价格记录: %s (厂商: %s)", modelName, author)
 				processedCount++
 			} else {
 				log.Printf("价格创建失败: %s (厂商: %s)", modelName, author)
@@ -267,25 +267,25 @@ func isInBlacklist(modelName string) bool {
 	modelNameLower := strings.ToLower(modelName)
 
 	// 记录黑名单匹配过程
-	log.Printf("检查模型是否在黑名单中: %s", modelNameLower)
+	// log.Printf("检查模型是否在黑名单中: %s", modelNameLower)
 
 	for _, blacklistItem := range blacklist {
 		blacklistItemLower := strings.ToLower(blacklistItem)
 
 		// 1. 完全匹配 - 模型名称与黑名单项完全相同
 		if modelNameLower == blacklistItemLower {
-			log.Printf("模型【%s】完全匹配黑名单项【%s】", modelNameLower, blacklistItemLower)
+			// log.Printf("模型【%s】完全匹配黑名单项【%s】", modelNameLower, blacklistItemLower)
 			return true
 		}
 
 		// 2. 包含匹配 - 模型名称中包含黑名单项
 		if strings.Contains(modelNameLower, blacklistItemLower) {
-			log.Printf("模型【%s】包含黑名单项【%s】", modelNameLower, blacklistItemLower)
+			// log.Printf("模型【%s】包含黑名单项【%s】", modelNameLower, blacklistItemLower)
 			return true
 		}
 	}
 
 	// 记录未匹配的情况
-	log.Printf("模型【%s】不在黑名单中", modelNameLower)
+	// log.Printf("模型【%s】不在黑名单中", modelNameLower)
 	return false
 }

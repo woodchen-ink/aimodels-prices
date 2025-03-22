@@ -149,7 +149,7 @@ func FetchAndSavePrices() error {
 				log.Printf("更新价格记录: %s", modelData.Slug)
 				processedCount++
 			} else {
-				log.Printf("价格无变化，跳过更新: %s", modelData.Slug)
+				// log.Printf("价格无变化，跳过更新: %s", modelData.Slug)
 				skippedCount++
 			}
 		} else {
@@ -162,7 +162,7 @@ func FetchAndSavePrices() error {
 			}
 
 			if changed {
-				log.Printf("创建新价格记录: %s", modelData.Slug)
+				// log.Printf("创建新价格记录: %s", modelData.Slug)
 				processedCount++
 			} else {
 				log.Printf("价格创建失败: %s", modelData.Slug)

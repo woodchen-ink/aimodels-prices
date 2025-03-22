@@ -2,6 +2,7 @@ package siliconflow_api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +16,8 @@ import (
 	"aimodels-prices/handlers"
 	"aimodels-prices/handlers/rates"
 	"aimodels-prices/models"
+
+	"gorm.io/gorm"
 )
 
 // 常量定义
@@ -93,7 +96,6 @@ func UpdateSiliconFlowPrices() error {
 
 		// 检查是否已处理过这个模型
 		if processedModels[modelName] {
-			log.Printf("跳过已处理的模型: %s", modelName)
 			skippedCount++
 			continue
 		}
@@ -161,10 +163,11 @@ func UpdateSiliconFlowPrices() error {
 
 		// 检查是否已存在相同模型的价格记录
 		var existingPrice models.Price
+		// 使用静默查询，不输出"record not found"错误
 		result := db.Where("model = ? AND channel_type = ?", modelName, SiliconFlowChannelType).First(&existingPrice)
 
 		if result.Error == nil {
-			// 使用processPrice函数处理更新，第三个参数设置为true表示直接审核通过
+			// 记录存在，执行更新
 			_, changed, err := handlers.ProcessPrice(price, &existingPrice, true, CreatedBy)
 			if err != nil {
 				log.Printf("更新价格记录失败 %s: %v", modelName, err)
@@ -173,13 +176,12 @@ func UpdateSiliconFlowPrices() error {
 			}
 
 			if changed {
-				log.Printf("更新价格记录: %s", modelName)
 				processedCount++
 			} else {
-				log.Printf("价格无变化，跳过更新: %s", modelName)
 				skippedCount++
 			}
-		} else {
+		} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// 记录不存在，需要创建新记录
 			// 检查是否存在相同模型名称的待审核记录
 			var pendingCount int64
 			if err := db.Model(&models.Price{}).Where("model = ? AND channel_type = ? AND status = 'pending'",
@@ -193,7 +195,7 @@ func UpdateSiliconFlowPrices() error {
 				continue
 			}
 
-			// 使用processPrice函数处理创建，第三个参数设置为true表示直接审核通过
+			// 创建新记录
 			_, changed, err := handlers.ProcessPrice(price, nil, true, CreatedBy)
 			if err != nil {
 				log.Printf("创建价格记录失败 %s: %v", modelName, err)
@@ -202,12 +204,16 @@ func UpdateSiliconFlowPrices() error {
 			}
 
 			if changed {
-				log.Printf("创建新价格记录: %s", modelName)
 				processedCount++
 			} else {
 				log.Printf("价格创建失败: %s", modelName)
 				skippedCount++
 			}
+		} else {
+			// 其他错误
+			log.Printf("查询价格记录时发生错误 %s: %v", modelName, result.Error)
+			skippedCount++
+			continue
 		}
 	}
 
