@@ -2,6 +2,7 @@ package rates
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,8 +41,8 @@ func GetPriceRates(c *gin.Context) {
 		return
 	}
 
-	// 预分配rates切片，减少内存分配
-	rates := make([]PriceRate, 0, len(prices))
+	// 创建map用于存储模型及其对应的最高倍率
+	modelRateMap := make(map[string]PriceRate)
 
 	// 计算倍率
 	for _, price := range prices {
@@ -58,13 +59,39 @@ func GetPriceRates(c *gin.Context) {
 			outputRate = price.OutputPrice / 14
 		}
 
-		rates = append(rates, PriceRate{
+		// 创建当前价格的PriceRate
+		currentRate := PriceRate{
 			Model:       price.Model,
 			Type:        price.BillingType,
 			ChannelType: price.ChannelType,
 			Input:       inputRate,
 			Output:      outputRate,
-		})
+		}
+
+		// 转换为小写以实现不区分大小写比较
+		modelLower := strings.ToLower(price.Model)
+
+		// 检查是否已存在相同模型名称（不区分大小写）
+		if existingRate, exists := modelRateMap[modelLower]; exists {
+			// 比较倍率，保留较高的那个
+			// 这里我们以输入和输出倍率的总和作为比较标准
+			existingTotal := existingRate.Input + existingRate.Output
+			currentTotal := inputRate + outputRate
+
+			if currentTotal > existingTotal {
+				// 当前倍率更高，替换已存在的
+				modelRateMap[modelLower] = currentRate
+			}
+		} else {
+			// 不存在相同模型名称，直接添加
+			modelRateMap[modelLower] = currentRate
+		}
+	}
+
+	// 从map中提取结果到slice
+	rates := make([]PriceRate, 0, len(modelRateMap))
+	for _, rate := range modelRateMap {
+		rates = append(rates, rate)
 	}
 
 	// 存入缓存，有效期24小时
