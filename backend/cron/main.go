@@ -12,47 +12,35 @@ import (
 
 var cronScheduler *cron.Cron
 
-// InitCronJobs 初始化并启动所有定时任务
-func InitCronJobs() {
+// Init 初始化并启动所有定时任务
+func Init() {
 	log.Println("初始化定时任务...")
 
 	// 创建一个新的cron调度器，使用秒级精度
 	cronScheduler = cron.New(cron.WithSeconds())
 
-	// 注册OpenRouter价格获取任务
-	// 每24小时执行一次
-	_, err := cronScheduler.AddFunc("4 6 * * *", func() {
+	// 注册价格获取任务
+	// 每4小时执行一次
+	_, err := cronScheduler.AddFunc("0 */4 * * *", func() {
 		if err := openrouter_api.FetchAndSavePrices(); err != nil {
 			log.Printf("OpenRouter价格获取任务执行失败: %v", err)
 		}
-	})
 
-	if err != nil {
-		log.Printf("注册OpenRouter价格获取任务失败: %v", err)
-	}
+		time.Sleep(3 * time.Second)
 
-	// 注册其他厂商价格更新任务
-	// 每24小时执行一次，错开时间避免同时执行
-	_, err = cronScheduler.AddFunc("30 6 * * *", func() {
 		if err := openrouter_api.UpdateOtherPrices(); err != nil {
 			log.Printf("其他厂商价格更新任务执行失败: %v", err)
 		}
-	})
 
-	if err != nil {
-		log.Printf("注册其他厂商价格更新任务失败: %v", err)
-	}
+		time.Sleep(3 * time.Second)
 
-	// 注册SiliconFlow价格更新任务
-	// 每24小时执行一次，错开时间避免同时执行
-	_, err = cronScheduler.AddFunc("0 7 * * *", func() {
 		if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
 			log.Printf("SiliconFlow价格更新任务执行失败: %v", err)
 		}
 	})
 
 	if err != nil {
-		log.Printf("注册SiliconFlow价格更新任务失败: %v", err)
+		log.Printf("注册价格更新定时任务失败: %v", err)
 	}
 
 	// 启动定时任务

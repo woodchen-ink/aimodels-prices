@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// 初始化并启动定时任务
-	cron.InitCronJobs()
+	cron.Init()
 	defer cron.StopCronJobs()
 
 	r := gin.Default()
