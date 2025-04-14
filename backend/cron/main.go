@@ -21,7 +21,7 @@ func Init() {
 
 	// 注册价格获取任务
 	// 每4小时执行一次
-	_, err := cronScheduler.AddFunc("0 */4 * * *", func() {
+	_, err := cronScheduler.AddFunc("0 0 */4 * * *", func() {
 		if err := openrouter_api.FetchAndSavePrices(); err != nil {
 			log.Printf("OpenRouter价格获取任务执行失败: %v", err)
 		}
