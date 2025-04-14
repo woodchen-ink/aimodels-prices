@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -107,6 +108,13 @@ func GetPrices(c *gin.Context) {
 func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool, username string) (models.Price, bool, error) {
 	// 如果是更新操作且存在现有记录
 	if existingPrice != nil {
+		// 使用更精确的浮点数比较函数
+		priceEqual := func(a, b float64) bool {
+			// 使用epsilon值进行浮点数比较，考虑到价格通常精确到小数点后4位
+			epsilon := 0.00001
+			return math.Abs(a-b) < epsilon
+		}
+
 		// 检查价格是否有变化
 		if isAdmin {
 			// 管理员直接更新主字段，检查是否有实际变化
@@ -115,8 +123,8 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 				existingPrice.BillingType == price.BillingType &&
 				existingPrice.ChannelType == price.ChannelType &&
 				existingPrice.Currency == price.Currency &&
-				existingPrice.InputPrice == price.InputPrice &&
-				existingPrice.OutputPrice == price.OutputPrice &&
+				priceEqual(existingPrice.InputPrice, price.InputPrice) &&
+				priceEqual(existingPrice.OutputPrice, price.OutputPrice) &&
 				existingPrice.PriceSource == price.PriceSource {
 				// 没有变化，不需要更新
 				return *existingPrice, false, nil
@@ -149,47 +157,51 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			return *existingPrice, true, nil
 		} else {
 			// 普通用户更新临时字段，检查是否有实际变化
-			// 创建临时值的指针
-			modelPtr := &price.Model
-			modelTypePtr := &price.ModelType
-			billingTypePtr := &price.BillingType
-			channelTypePtr := &price.ChannelType
-			currencyPtr := &price.Currency
-			inputPricePtr := &price.InputPrice
-			outputPricePtr := &price.OutputPrice
-			priceSourcePtr := &price.PriceSource
 
-			// 检查临时字段与现有主字段是否相同
-			if (existingPrice.Model == price.Model &&
-				existingPrice.ModelType == price.ModelType &&
-				existingPrice.BillingType == price.BillingType &&
-				existingPrice.ChannelType == price.ChannelType &&
-				existingPrice.Currency == price.Currency &&
-				existingPrice.InputPrice == price.InputPrice &&
-				existingPrice.OutputPrice == price.OutputPrice &&
-				existingPrice.PriceSource == price.PriceSource) ||
-				// 或者检查临时字段与现有临时字段是否相同
-				(existingPrice.TempModel != nil && *existingPrice.TempModel == price.Model &&
-					existingPrice.TempModelType != nil && *existingPrice.TempModelType == price.ModelType &&
-					existingPrice.TempBillingType != nil && *existingPrice.TempBillingType == price.BillingType &&
-					existingPrice.TempChannelType != nil && *existingPrice.TempChannelType == price.ChannelType &&
-					existingPrice.TempCurrency != nil && *existingPrice.TempCurrency == price.Currency &&
-					existingPrice.TempInputPrice != nil && *existingPrice.TempInputPrice == price.InputPrice &&
-					existingPrice.TempOutputPrice != nil && *existingPrice.TempOutputPrice == price.OutputPrice &&
-					existingPrice.TempPriceSource != nil && *existingPrice.TempPriceSource == price.PriceSource) {
-				// 没有变化，不需要更新
+			// 先检查与主字段比较是否有变化
+			hasChanges := false
+
+			if existingPrice.Model != price.Model ||
+				existingPrice.ModelType != price.ModelType ||
+				existingPrice.BillingType != price.BillingType ||
+				existingPrice.ChannelType != price.ChannelType ||
+				existingPrice.Currency != price.Currency ||
+				!priceEqual(existingPrice.InputPrice, price.InputPrice) ||
+				!priceEqual(existingPrice.OutputPrice, price.OutputPrice) ||
+				existingPrice.PriceSource != price.PriceSource {
+				hasChanges = true
+			}
+
+			// 如果与主字段有变化，再检查与临时字段比较是否有变化
+			if hasChanges && existingPrice.TempModel != nil {
+				// 检查是否与已有的临时字段相同
+				if *existingPrice.TempModel == price.Model &&
+					(existingPrice.TempModelType == nil || *existingPrice.TempModelType == price.ModelType) &&
+					(existingPrice.TempBillingType == nil || *existingPrice.TempBillingType == price.BillingType) &&
+					(existingPrice.TempChannelType == nil || *existingPrice.TempChannelType == price.ChannelType) &&
+					(existingPrice.TempCurrency == nil || *existingPrice.TempCurrency == price.Currency) &&
+					(existingPrice.TempInputPrice == nil || priceEqual(*existingPrice.TempInputPrice, price.InputPrice)) &&
+					(existingPrice.TempOutputPrice == nil || priceEqual(*existingPrice.TempOutputPrice, price.OutputPrice)) &&
+					(existingPrice.TempPriceSource == nil || *existingPrice.TempPriceSource == price.PriceSource) {
+					// 与之前提交的临时值相同，不需要更新
+					hasChanges = false
+				}
+			}
+
+			// 如果没有实际变化，直接返回
+			if !hasChanges {
 				return *existingPrice, false, nil
 			}
 
 			// 有变化，更新临时字段
-			existingPrice.TempModel = modelPtr
-			existingPrice.TempModelType = modelTypePtr
-			existingPrice.TempBillingType = billingTypePtr
-			existingPrice.TempChannelType = channelTypePtr
-			existingPrice.TempCurrency = currencyPtr
-			existingPrice.TempInputPrice = inputPricePtr
-			existingPrice.TempOutputPrice = outputPricePtr
-			existingPrice.TempPriceSource = priceSourcePtr
+			existingPrice.TempModel = &price.Model
+			existingPrice.TempModelType = &price.ModelType
+			existingPrice.TempBillingType = &price.BillingType
+			existingPrice.TempChannelType = &price.ChannelType
+			existingPrice.TempCurrency = &price.Currency
+			existingPrice.TempInputPrice = &price.InputPrice
+			existingPrice.TempOutputPrice = &price.OutputPrice
+			existingPrice.TempPriceSource = &price.PriceSource
 			existingPrice.Status = "pending"
 			existingPrice.UpdatedBy = &username
 
@@ -212,7 +224,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			return price, false, err
 		}
 		return price, true, nil
-
 	}
 }
 

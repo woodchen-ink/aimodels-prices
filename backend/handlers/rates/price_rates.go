@@ -51,12 +51,12 @@ func GetPriceRates(c *gin.Context) {
 
 		if price.Currency == "USD" {
 			// 如果是美元，除以2
-			inputRate = price.InputPrice / 2
-			outputRate = price.OutputPrice / 2
+			inputRate = round(price.InputPrice/2, 2)
+			outputRate = round(price.OutputPrice/2, 2)
 		} else {
 			// 如果是人民币或其他货币，除以14
-			inputRate = price.InputPrice / 14
-			outputRate = price.OutputPrice / 14
+			inputRate = round(price.InputPrice/14, 2)
+			outputRate = round(price.OutputPrice/14, 2)
 		}
 
 		// 创建当前价格的PriceRate
@@ -103,4 +103,13 @@ func GetPriceRates(c *gin.Context) {
 // ClearRatesCache 清除价格倍率缓存
 func ClearRatesCache() {
 	database.GlobalCache.Delete("price_rates")
+}
+
+// round 四舍五入到指定小数位
+func round(num float64, precision int) float64 {
+	precision10 := float64(1)
+	for i := 0; i < precision; i++ {
+		precision10 *= 10
+	}
+	return float64(int(num*precision10+0.5)) / precision10
 }
