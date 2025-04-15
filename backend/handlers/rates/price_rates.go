@@ -51,12 +51,12 @@ func GetPriceRates(c *gin.Context) {
 
 		if price.Currency == "USD" {
 			// 如果是美元，除以2
-			inputRate = round(price.InputPrice/2, 2)
-			outputRate = round(price.OutputPrice/2, 2)
+			inputRate = round(price.InputPrice/2, 4)
+			outputRate = round(price.OutputPrice/2, 4)
 		} else {
 			// 如果是人民币或其他货币，除以14
-			inputRate = round(price.InputPrice/14, 2)
-			outputRate = round(price.OutputPrice/14, 2)
+			inputRate = round(price.InputPrice/14, 4)
+			outputRate = round(price.OutputPrice/14, 4)
 		}
 
 		// 创建当前价格的PriceRate
