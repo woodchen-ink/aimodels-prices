@@ -11,7 +11,7 @@ import (
 
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
-	"aimodels-prices/handlers/rates"
+	"aimodels-prices/handlers/one_hub"
 	"aimodels-prices/models"
 )
 
@@ -233,7 +233,7 @@ func UpdateOtherPrices() error {
 	log.Printf("其他厂商价格数据处理完成，成功处理: %d, 跳过: %d", processedCount, skippedCount)
 
 	// 清除倍率缓存
-	rates.ClearRatesCache()
+	one_hub.ClearRatesCache()
 	log.Println("倍率缓存已清除")
 	return nil
 }

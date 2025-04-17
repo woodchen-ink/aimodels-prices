@@ -34,8 +34,8 @@
               <div class="api-url">
                 <span class="method">GET</span>
                 <el-tooltip content="点击复制" placement="top">
-                  <span class="url" @click="copyToClipboard(origin + '/api/prices/rates')">
-                    {{ origin }}/api/prices/rates
+                  <span class="url" @click="copyToClipboard(origin + '/api/one_hub/rates')">
+                    {{ origin }}/api/one_hub/rates
                   </span>
                 </el-tooltip>
               </div>
@@ -59,6 +59,19 @@
                 <li>input: 输入价格倍率</li>
                 <li>output: 输出价格倍率</li>
               </ul>
+            </div>
+          </el-collapse-item>
+
+          <el-collapse-item title="One-Hub 官方价格倍率(ID小于1000)">
+            <div class="api-doc">
+              <div class="api-url">
+                <span class="method">GET</span>
+                <el-tooltip content="点击复制" placement="top">
+                  <span class="url" @click="copyToClipboard(origin + '/api/one_hub/official-rates')">
+                    {{ origin }}/api/one_hub/official-rates
+                  </span>
+                </el-tooltip>
+              </div>
             </div>
           </el-collapse-item>
 

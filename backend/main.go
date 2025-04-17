@@ -10,7 +10,7 @@ import (
 	"aimodels-prices/cron"
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
-	"aimodels-prices/handlers/rates"
+	one_hub_handlers "aimodels-prices/handlers/one_hub"
 	initTasks "aimodels-prices/init"
 	"aimodels-prices/middleware"
 )
@@ -66,12 +66,21 @@ func main() {
 		prices := api.Group("/prices")
 		{
 			prices.GET("", handlers.GetPrices)
-			prices.GET("/rates", rates.GetPriceRates)
+
+			prices.GET("/rates", one_hub_handlers.GetPriceRates) //one_hub 价格倍率, 旧接口
+
 			prices.POST("", middleware.AuthRequired(), handlers.CreatePrice)
 			prices.PUT("/:id", middleware.AuthRequired(), handlers.UpdatePrice)
 			prices.DELETE("/:id", middleware.AuthRequired(), handlers.DeletePrice)
 			prices.PUT("/:id/status", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdatePriceStatus)
 			prices.PUT("/approve-all", middleware.AuthRequired(), middleware.AdminRequired(), handlers.ApproveAllPrices)
+		}
+
+		//one_hub 路由
+		one_hub := api.Group("/one_hub")
+		{
+			one_hub.GET("/rates", one_hub_handlers.GetPriceRates)
+			one_hub.GET("/official-rates", one_hub_handlers.GetOfficialPriceRates)
 		}
 
 		// 模型厂商相关路由

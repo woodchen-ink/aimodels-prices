@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"aimodels-prices/database"
-	"aimodels-prices/handlers/rates"
+	"aimodels-prices/handlers/one_hub"
 	"aimodels-prices/models"
 )
 
@@ -628,5 +628,5 @@ func clearPriceCache() {
 	database.GlobalCache.Clear()
 
 	// 同时清除价格倍率缓存
-	rates.ClearRatesCache()
+	one_hub.ClearRatesCache()
 }
