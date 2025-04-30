@@ -49,6 +49,15 @@ var extraRelativeToInput = map[string]bool{
 	"output_image_tokens": false,
 }
 
+// 计算安全倍率，避免除以零
+func calculateSafeRatio(value, baseRate float64) float64 {
+	// 如果基准率为0或接近0，返回1作为默认倍率
+	if baseRate < 0.0000001 {
+		return 1.0 // 如果基准率接近0，返回1作为默认倍率
+	}
+	return value / baseRate
+}
+
 // GetPriceRates 获取价格倍率
 func GetPriceRates(c *gin.Context) {
 	cacheKey := "one_hub_price_rates"
@@ -109,10 +118,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputAudioTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputAudioTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputAudioTokens = &rate
 				} else {
-					rate := round(*price.InputAudioTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputAudioTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputAudioTokens = &rate
 				}
 			}
@@ -126,10 +137,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputAudioTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputAudioTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputAudioTokens = &rate
 				} else {
-					rate := round(*price.OutputAudioTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputAudioTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputAudioTokens = &rate
 				}
 			}
@@ -143,10 +156,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedTokens = &rate
 				} else {
-					rate := round(*price.CachedTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedTokens = &rate
 				}
 			}
@@ -160,10 +175,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedReadTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedReadTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedReadTokens = &rate
 				} else {
-					rate := round(*price.CachedReadTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedReadTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedReadTokens = &rate
 				}
 			}
@@ -177,10 +194,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedWriteTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedWriteTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedWriteTokens = &rate
 				} else {
-					rate := round(*price.CachedWriteTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedWriteTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedWriteTokens = &rate
 				}
 			}
@@ -194,10 +213,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.ReasoningTokens/2, 4) / baseRate
+					normalizedValue := round(*price.ReasoningTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.ReasoningTokens = &rate
 				} else {
-					rate := round(*price.ReasoningTokens/14, 4) / baseRate
+					normalizedValue := round(*price.ReasoningTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.ReasoningTokens = &rate
 				}
 			}
@@ -211,10 +232,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputTextTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputTextTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputTextTokens = &rate
 				} else {
-					rate := round(*price.InputTextTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputTextTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputTextTokens = &rate
 				}
 			}
@@ -228,10 +251,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputTextTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputTextTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputTextTokens = &rate
 				} else {
-					rate := round(*price.OutputTextTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputTextTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputTextTokens = &rate
 				}
 			}
@@ -245,10 +270,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputImageTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputImageTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputImageTokens = &rate
 				} else {
-					rate := round(*price.InputImageTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputImageTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputImageTokens = &rate
 				}
 			}
@@ -262,10 +289,12 @@ func GetPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputImageTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputImageTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputImageTokens = &rate
 				} else {
-					rate := round(*price.OutputImageTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputImageTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputImageTokens = &rate
 				}
 			}
@@ -377,10 +406,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputAudioTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputAudioTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputAudioTokens = &rate
 				} else {
-					rate := round(*price.InputAudioTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputAudioTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputAudioTokens = &rate
 				}
 			}
@@ -394,10 +425,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputAudioTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputAudioTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputAudioTokens = &rate
 				} else {
-					rate := round(*price.OutputAudioTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputAudioTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputAudioTokens = &rate
 				}
 			}
@@ -411,10 +444,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedTokens = &rate
 				} else {
-					rate := round(*price.CachedTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedTokens = &rate
 				}
 			}
@@ -428,10 +463,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedReadTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedReadTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedReadTokens = &rate
 				} else {
-					rate := round(*price.CachedReadTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedReadTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedReadTokens = &rate
 				}
 			}
@@ -445,10 +482,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.CachedWriteTokens/2, 4) / baseRate
+					normalizedValue := round(*price.CachedWriteTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedWriteTokens = &rate
 				} else {
-					rate := round(*price.CachedWriteTokens/14, 4) / baseRate
+					normalizedValue := round(*price.CachedWriteTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.CachedWriteTokens = &rate
 				}
 			}
@@ -462,10 +501,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.ReasoningTokens/2, 4) / baseRate
+					normalizedValue := round(*price.ReasoningTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.ReasoningTokens = &rate
 				} else {
-					rate := round(*price.ReasoningTokens/14, 4) / baseRate
+					normalizedValue := round(*price.ReasoningTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.ReasoningTokens = &rate
 				}
 			}
@@ -479,10 +520,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputTextTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputTextTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputTextTokens = &rate
 				} else {
-					rate := round(*price.InputTextTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputTextTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputTextTokens = &rate
 				}
 			}
@@ -496,10 +539,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputTextTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputTextTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputTextTokens = &rate
 				} else {
-					rate := round(*price.OutputTextTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputTextTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputTextTokens = &rate
 				}
 			}
@@ -513,10 +558,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.InputImageTokens/2, 4) / baseRate
+					normalizedValue := round(*price.InputImageTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputImageTokens = &rate
 				} else {
-					rate := round(*price.InputImageTokens/14, 4) / baseRate
+					normalizedValue := round(*price.InputImageTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.InputImageTokens = &rate
 				}
 			}
@@ -530,10 +577,12 @@ func GetOfficialPriceRates(c *gin.Context) {
 				}
 
 				if price.Currency == "USD" {
-					rate := round(*price.OutputImageTokens/2, 4) / baseRate
+					normalizedValue := round(*price.OutputImageTokens/2, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputImageTokens = &rate
 				} else {
-					rate := round(*price.OutputImageTokens/14, 4) / baseRate
+					normalizedValue := round(*price.OutputImageTokens/14, 4)
+					rate := calculateSafeRatio(normalizedValue, baseRate)
 					extraRatios.OutputImageTokens = &rate
 				}
 			}
