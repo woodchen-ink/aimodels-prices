@@ -76,175 +76,174 @@
         </div>
       </div>
 
-      <!-- 添加骨架屏 -->
-      <template v-if="loading">
-        <div v-for="i in 5" :key="i" class="skeleton-row">
-          <el-skeleton :rows="1" animated />
-        </div>
-      </template>
-
-      <el-table :data="prices" style="width: 100%" @selection-change="handlePriceSelectionChange"
-        v-loading="tableLoading" element-loading-text="加载中...">
-        <el-table-column v-if="isAdmin" type="selection" width="55" />
-        <el-table-column label="模型">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ row.model }}</span>
-              <el-tag v-if="row.temp_model && row.temp_model !== 'NULL'" type="warning" size="small" effect="light">
-                待审核: {{ row.temp_model }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="模型类型" width="120">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ getModelType(row.model_type) }}</span>
-              <el-tag v-if="row.temp_model_type && row.temp_model_type !== 'NULL'" type="warning" size="small"
-                effect="light">
-                待审核: {{ getModelType(row.temp_model_type) }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="计费类型" width="120">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ getBillingType(row.billing_type) }}</span>
-              <el-tag v-if="row.temp_billing_type && row.temp_billing_type !== 'NULL'" type="warning" size="small"
-                effect="light">
-                待审核: {{ getBillingType(row.temp_billing_type) }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="模型厂商" width="180">
-          <template #default="{ row }">
-            <div class="value-container">
-              <div style="display: flex; align-items: center; gap: 8px">
-                <el-image v-if="getProvider(row.channel_type)?.icon" :src="getProvider(row.channel_type)?.icon"
-                  style="width: 24px; height: 24px" />
-                <span>{{ getProvider(row.channel_type)?.name || row.channel_type }}</span>
+      <!-- 替换表格为卡片布局 -->
+      <div class="price-cards-container">
+        <template v-if="loading">
+          <div v-for="i in 6" :key="i" class="price-card skeleton">
+            <el-skeleton :rows="4" animated />
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="price in prices" :key="price.id" class="price-card">
+            <div class="price-card-header">
+              <div class="provider-info">
+                <el-image 
+                  v-if="getProvider(price.channel_type)?.icon" 
+                  :src="getProvider(price.channel_type)?.icon"
+                  class="provider-icon" 
+                />
+                <span class="provider-name">{{ getProvider(price.channel_type)?.name }}</span>
               </div>
-              <el-tag v-if="row.temp_channel_type && row.temp_channel_type !== 'NULL'" type="warning" size="small"
-                effect="light">
-                待审核: {{ getProvider(row.temp_channel_type)?.name || row.temp_channel_type }}
-              </el-tag>
+              <div class="model-status" :class="price.status">
+                {{ getStatus(price.status) }}
+              </div>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="货币" width="80">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ row.currency }}</span>
-              <el-tag v-if="row.temp_currency && row.temp_currency !== 'NULL'" type="warning" size="small"
-                effect="light">
-                待审核: {{ row.temp_currency }}
-              </el-tag>
+
+            <div class="model-info">
+              <h3 class="model-name">
+                {{ price.model }}
+                <el-tag v-if="price.temp_model && price.temp_model !== 'NULL'" 
+                  type="warning" size="small" effect="light">
+                  待审核: {{ price.temp_model }}
+                </el-tag>
+              </h3>
+              <div class="model-meta">
+                <el-tag size="small" effect="plain">{{ getModelType(price.model_type) }}</el-tag>
+                <el-tag size="small" effect="plain">{{ getBillingType(price.billing_type) }}</el-tag>
+                <el-tag size="small" effect="plain">{{ price.currency }}</el-tag>
+              </div>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="输入价格(M)" width="120">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ row.input_price === 0 ? '免费' : row.input_price }}</span>
-              <el-tag
-                v-if="row.temp_input_price !== null && row.temp_input_price !== undefined && row.temp_input_price !== 'NULL'"
-                type="warning" size="small" effect="light">
-                待审核: {{ row.temp_input_price === 0 ? '免费' : row.temp_input_price }}
-              </el-tag>
+
+            <div class="price-info">
+              <div class="price-row">
+                <span class="price-label">输入价格(M):</span>
+                <span class="price-value">{{ price.input_price === 0 ? '免费' : price.input_price }}</span>
+                <el-tag v-if="price.temp_input_price !== null && price.temp_input_price !== undefined" 
+                  type="warning" size="small" effect="light">
+                  待审核: {{ price.temp_input_price === 0 ? '免费' : price.temp_input_price }}
+                </el-tag>
+              </div>
+              <div class="price-row">
+                <span class="price-label">输出价格(M):</span>
+                <span class="price-value">{{ price.output_price === 0 ? '免费' : price.output_price }}</span>
+                <el-tag v-if="price.temp_output_price !== null && price.temp_output_price !== undefined" 
+                  type="warning" size="small" effect="light">
+                  待审核: {{ price.temp_output_price === 0 ? '免费' : price.temp_output_price }}
+                </el-tag>
+              </div>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="输出价格(M)" width="120">
-          <template #default="{ row }">
-            <div class="value-container">
-              <span>{{ row.output_price === 0 ? '免费' : row.output_price }}</span>
-              <el-tag
-                v-if="row.temp_output_price !== null && row.temp_output_price !== undefined && row.temp_output_price !== 'NULL'"
-                type="warning" size="small" effect="light">
-                待审核: {{ row.temp_output_price === 0 ? '免费' : row.temp_output_price }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column width="80">
-          <template #default="{ row }">
-            <el-popover placement="left" :width="200" trigger="hover">
-              <template #reference>
-                <el-button link type="primary">详情</el-button>
-              </template>
-              <div class="price-detail">
-                <div class="detail-item">
-                  <span class="detail-label">创建者:</span>
-                  <span class="detail-value">{{ row.created_by }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">价格来源:</span>
-                  <div class="detail-value">
-                    <span>{{ row.price_source }}</span>
-                    <el-tag v-if="row.temp_price_source && row.temp_price_source !== 'NULL'" type="warning" size="small"
-                      effect="light">
-                      待审核: {{ row.temp_price_source }}
+
+            <div v-if="hasExtendedPrices(price)" class="extended-prices">
+              <div class="section-title">扩展价格</div>
+              <div class="extended-price-grid">
+                <template v-if="price.input_audio_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">音频输入倍率</span>
+                    <span class="ext-price-value">{{ price.input_audio_tokens }}</span>
+                    <el-tag v-if="price.temp_input_audio_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_input_audio_tokens }}
                     </el-tag>
                   </div>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">状态:</span>
-                  <span class="detail-value">{{ getStatus(row.status) }}</span>
-                </div>
+                </template>
+                <template v-if="price.cached_read_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">缓存读取倍率</span>
+                    <span class="ext-price-value">{{ price.cached_read_tokens }}</span>
+                    <el-tag v-if="price.temp_cached_read_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_cached_read_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="price.reasoning_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">推理倍率</span>
+                    <span class="ext-price-value">{{ price.reasoning_tokens }}</span>
+                    <el-tag v-if="price.temp_reasoning_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_reasoning_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="price.input_text_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">输入文本倍率</span>
+                    <span class="ext-price-value">{{ price.input_text_tokens }}</span>
+                    <el-tag v-if="price.temp_input_text_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_input_text_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="price.output_text_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">输出文本倍率</span>
+                    <span class="ext-price-value">{{ price.output_text_tokens }}</span>
+                    <el-tag v-if="price.temp_output_text_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_output_text_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="price.input_image_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">输入图片倍率</span>
+                    <span class="ext-price-value">{{ price.input_image_tokens }}</span>
+                    <el-tag v-if="price.temp_input_image_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_input_image_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="price.output_image_tokens">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">输出图片倍率</span>
+                    <span class="ext-price-value">{{ price.output_image_tokens }}</span>
+                    <el-tag v-if="price.temp_output_image_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_output_image_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
               </div>
-            </el-popover>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" align="center">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <template v-if="isAdmin">
-                <el-tooltip content="编辑" placement="top">
-                  <el-button type="primary" link @click="handleEdit(row)">
-                    <el-icon>
-                      <Edit />
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="删除" placement="top">
-                  <el-button type="danger" link @click="handleDelete(row)">
-                    <el-icon>
-                      <Delete />
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="row.status === 'pending' ? '通过审核' : (row.status === 'rejected' ? '重新审核通过' : '已审核')" placement="top">
-                  <el-button type="success" link @click="updateStatus(row.id, 'approved')"
-                    :disabled="row.status !== 'pending' && row.status !== 'rejected'">
-                    <el-icon>
-                      <Check />
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="row.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
-                  <el-button type="danger" link @click="updateStatus(row.id, 'rejected')"
-                    :disabled="row.status !== 'pending'">
-                    <el-icon>
-                      <Close />
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
-              </template>
-              <template v-else>
-                <el-tooltip :content="row.status === 'pending' ? '等待审核中' : '提交修改'" placement="top">
-                  <el-button type="primary" link @click="handleQuickEdit(row)" :disabled="row.status === 'pending'">
-                    <el-icon>
-                      <Edit />
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
-              </template>
             </div>
-          </template>
-        </el-table-column>
-      </el-table>
+
+            <div class="price-card-footer">
+              <div class="meta-info">
+                <span class="created-by">创建者: {{ price.created_by }}</span>
+                <span class="created-at">{{ new Date(price.created_at).toLocaleString() }}</span>
+              </div>
+              <div class="action-buttons">
+                <template v-if="isAdmin">
+                  <el-tooltip content="编辑" placement="top">
+                    <el-button type="primary" link @click="handleEdit(price)">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="删除" placement="top">
+                    <el-button type="danger" link @click="handleDelete(price)">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="price.status === 'pending' ? '通过审核' : '已审核'" placement="top">
+                    <el-button type="success" link @click="updateStatus(price.id, 'approved')"
+                      :disabled="price.status !== 'pending'">
+                      <el-icon><Check /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="price.status === 'pending' ? '拒绝审核' : '已审核'" placement="top">
+                    <el-button type="danger" link @click="updateStatus(price.id, 'rejected')"
+                      :disabled="price.status !== 'pending'">
+                      <el-icon><Close /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </template>
+                <template v-else>
+                  <el-tooltip :content="price.status === 'pending' ? '等待审核中' : '提交修改'" placement="top">
+                    <el-button type="primary" link @click="handleQuickEdit(price)" :disabled="price.status === 'pending'">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
 
       <!-- 修改分页组件 -->
       <div class="pagination-container">
@@ -435,6 +434,51 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-divider>扩展价格（可选）</el-divider>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="音频输入倍率">
+              <el-input-number v-model="form.input_audio_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="缓存读取倍率">
+              <el-input-number v-model="form.cached_read_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="推理倍率">
+              <el-input-number v-model="form.reasoning_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输入文本倍率">
+              <el-input-number v-model="form.input_text_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输出文本倍率">
+              <el-input-number v-model="form.output_text_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输入图片倍率">
+              <el-input-number v-model="form.input_image_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="输出图片倍率">
+              <el-input-number v-model="form.output_image_tokens" :precision="4" :step="0.0001" style="width: 100%"
+                :controls="false" placeholder="请输入倍率" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="价格来源">
               <el-input v-model="form.price_source" />
             </el-form-item>
@@ -472,6 +516,13 @@ const form = ref({
   currency: 'USD',
   input_price: null,
   output_price: null,
+  input_audio_tokens: null,
+  cached_read_tokens: null,
+  reasoning_tokens: null,
+  input_text_tokens: null,
+  output_text_tokens: null,
+  input_image_tokens: null,
+  output_image_tokens: null,
   price_source: '',
   created_by: ''
 })
@@ -630,6 +681,13 @@ const handleAdd = () => {
     currency: 'USD',
     input_price: null,
     output_price: null,
+    input_audio_tokens: null,
+    cached_read_tokens: null,
+    reasoning_tokens: null,
+    input_text_tokens: null,
+    output_text_tokens: null,
+    input_image_tokens: null,
+    output_image_tokens: null,
     price_source: '',
     created_by: ''
   }
@@ -652,6 +710,13 @@ const handleQuickEdit = (row) => {
     currency: row.currency,
     input_price: row.input_price,
     output_price: row.output_price,
+    input_audio_tokens: row.input_audio_tokens,
+    cached_read_tokens: row.cached_read_tokens,
+    reasoning_tokens: row.reasoning_tokens,
+    input_text_tokens: row.input_text_tokens,
+    output_text_tokens: row.output_text_tokens,
+    input_image_tokens: row.input_image_tokens,
+    output_image_tokens: row.output_image_tokens,
     price_source: row.price_source,
     created_by: props.user.username
   }
@@ -727,6 +792,13 @@ const handleSubmitResponse = async (response) => {
     currency: 'USD',
     input_price: null,
     output_price: null,
+    input_audio_tokens: null,
+    cached_read_tokens: null,
+    reasoning_tokens: null,
+    input_text_tokens: null,
+    output_text_tokens: null,
+    input_image_tokens: null,
+    output_image_tokens: null,
     price_source: '',
     created_by: ''
   }
@@ -814,6 +886,13 @@ const createNewRow = () => ({
   currency: 'USD',
   input_price: null,
   output_price: null,
+  input_audio_tokens: null,
+  cached_read_tokens: null,
+  reasoning_tokens: null,
+  input_text_tokens: null,
+  output_text_tokens: null,
+  input_image_tokens: null,
+  output_image_tokens: null,
   price_source: '',
   created_by: props.user?.username || ''
 })
@@ -1144,6 +1223,17 @@ const handleSearch = () => {
   loadPrices()
 }
 
+// 添加检查是否有扩展价格的方法
+const hasExtendedPrices = (row) => {
+  return row.input_audio_tokens ||
+    row.cached_read_tokens ||
+    row.reasoning_tokens ||
+    row.input_text_tokens ||
+    row.output_text_tokens ||
+    row.input_image_tokens ||
+    row.output_image_tokens
+}
+
 onMounted(() => {
   loadModelTypes()
   loadPrices()
@@ -1408,6 +1498,225 @@ onMounted(() => {
 :global(.el-pagination .el-select .el-input__wrapper) {
   width: auto !important;
   min-width: 140px !important;
+}
+
+.extended-prices {
+  font-size: 12px;
+}
+
+.price-item {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-label {
+  color: #666;
+  min-width: 100px;
+}
+
+.price-value {
+  font-weight: 500;
+  color: #333;
+}
+
+.el-tag {
+  margin-left: 4px;
+}
+
+.price-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.price-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.price-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.price-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.provider-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.provider-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.provider-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.model-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.model-status.pending {
+  background: #fff7e6;
+  color: #d46b08;
+}
+
+.model-status.approved {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.model-status.rejected {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+.model-info {
+  margin-top: 0.5rem;
+}
+
+.model-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.model-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.price-label {
+  color: #666;
+  min-width: 100px;
+}
+
+.price-value {
+  font-weight: 500;
+  color: #333;
+}
+
+.extended-prices {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.section-title {
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.extended-price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.extended-price-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.ext-price-label {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.ext-price-value {
+  font-weight: 500;
+  color: #333;
+}
+
+.price-card-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.created-by {
+  font-weight: 500;
+}
+
+.created-at {
+  color: #999;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skeleton {
+  min-height: 300px;
+}
+
+:deep(.el-tag) {
+  margin: 0;
+}
+
+:deep(.el-button) {
+  padding: 4px;
+}
+
+:deep(.el-icon) {
+  font-size: 16px;
 }
 </style>
 
