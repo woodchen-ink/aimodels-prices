@@ -35,6 +35,20 @@ type PriceRate struct {
 	ExtraRatios *ExtraRatios `json:"extra_ratios,omitempty"`
 }
 
+// 定义扩展价格字段是否相对于input的映射
+var extraRelativeToInput = map[string]bool{
+	"cached_tokens":       true,
+	"cached_write_tokens": true,
+	"cached_read_tokens":  true,
+	"input_audio_tokens":  true,
+	"output_audio_tokens": false,
+	"reasoning_tokens":    false,
+	"input_text_tokens":   true,
+	"output_text_tokens":  false,
+	"input_image_tokens":  true,
+	"output_image_tokens": false,
+}
+
 // GetPriceRates 获取价格倍率
 func GetPriceRates(c *gin.Context) {
 	cacheKey := "one_hub_price_rates"
@@ -87,103 +101,173 @@ func GetPriceRates(c *gin.Context) {
 
 			// 计算各扩展价格字段的倍率
 			if price.InputAudioTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputAudioTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_audio_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputAudioTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputAudioTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputAudioTokens/2, 4) / baseRate
+					extraRatios.InputAudioTokens = &rate
+				} else {
+					rate := round(*price.InputAudioTokens/14, 4) / baseRate
+					extraRatios.InputAudioTokens = &rate
+				}
 			}
 
 			if price.OutputAudioTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputAudioTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_audio_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputAudioTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputAudioTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputAudioTokens/2, 4) / baseRate
+					extraRatios.OutputAudioTokens = &rate
+				} else {
+					rate := round(*price.OutputAudioTokens/14, 4) / baseRate
+					extraRatios.OutputAudioTokens = &rate
+				}
 			}
 
 			if price.CachedTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedTokens/2, 4) / baseRate
+					extraRatios.CachedTokens = &rate
+				} else {
+					rate := round(*price.CachedTokens/14, 4) / baseRate
+					extraRatios.CachedTokens = &rate
+				}
 			}
 
 			if price.CachedReadTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedReadTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_read_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedReadTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedReadTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedReadTokens/2, 4) / baseRate
+					extraRatios.CachedReadTokens = &rate
+				} else {
+					rate := round(*price.CachedReadTokens/14, 4) / baseRate
+					extraRatios.CachedReadTokens = &rate
+				}
 			}
 
 			if price.CachedWriteTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedWriteTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_write_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedWriteTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedWriteTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedWriteTokens/2, 4) / baseRate
+					extraRatios.CachedWriteTokens = &rate
+				} else {
+					rate := round(*price.CachedWriteTokens/14, 4) / baseRate
+					extraRatios.CachedWriteTokens = &rate
+				}
 			}
 
 			if price.ReasoningTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.ReasoningTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["reasoning_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.ReasoningTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.ReasoningTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.ReasoningTokens/2, 4) / baseRate
+					extraRatios.ReasoningTokens = &rate
+				} else {
+					rate := round(*price.ReasoningTokens/14, 4) / baseRate
+					extraRatios.ReasoningTokens = &rate
+				}
 			}
 
 			if price.InputTextTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputTextTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_text_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputTextTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputTextTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputTextTokens/2, 4) / baseRate
+					extraRatios.InputTextTokens = &rate
+				} else {
+					rate := round(*price.InputTextTokens/14, 4) / baseRate
+					extraRatios.InputTextTokens = &rate
+				}
 			}
 
 			if price.OutputTextTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputTextTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_text_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputTextTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputTextTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputTextTokens/2, 4) / baseRate
+					extraRatios.OutputTextTokens = &rate
+				} else {
+					rate := round(*price.OutputTextTokens/14, 4) / baseRate
+					extraRatios.OutputTextTokens = &rate
+				}
 			}
 
 			if price.InputImageTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputImageTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_image_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputImageTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputImageTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputImageTokens/2, 4) / baseRate
+					extraRatios.InputImageTokens = &rate
+				} else {
+					rate := round(*price.InputImageTokens/14, 4) / baseRate
+					extraRatios.InputImageTokens = &rate
+				}
 			}
 
 			if price.OutputImageTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputImageTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_image_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputImageTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputImageTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputImageTokens/2, 4) / baseRate
+					extraRatios.OutputImageTokens = &rate
+				} else {
+					rate := round(*price.OutputImageTokens/14, 4) / baseRate
+					extraRatios.OutputImageTokens = &rate
+				}
 			}
 		}
 
@@ -285,103 +369,173 @@ func GetOfficialPriceRates(c *gin.Context) {
 
 			// 计算各扩展价格字段的倍率
 			if price.InputAudioTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputAudioTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_audio_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputAudioTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputAudioTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputAudioTokens/2, 4) / baseRate
+					extraRatios.InputAudioTokens = &rate
+				} else {
+					rate := round(*price.InputAudioTokens/14, 4) / baseRate
+					extraRatios.InputAudioTokens = &rate
+				}
 			}
 
 			if price.OutputAudioTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputAudioTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_audio_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputAudioTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputAudioTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputAudioTokens/2, 4) / baseRate
+					extraRatios.OutputAudioTokens = &rate
+				} else {
+					rate := round(*price.OutputAudioTokens/14, 4) / baseRate
+					extraRatios.OutputAudioTokens = &rate
+				}
 			}
 
 			if price.CachedTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedTokens/2, 4) / baseRate
+					extraRatios.CachedTokens = &rate
+				} else {
+					rate := round(*price.CachedTokens/14, 4) / baseRate
+					extraRatios.CachedTokens = &rate
+				}
 			}
 
 			if price.CachedReadTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedReadTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_read_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedReadTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedReadTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedReadTokens/2, 4) / baseRate
+					extraRatios.CachedReadTokens = &rate
+				} else {
+					rate := round(*price.CachedReadTokens/14, 4) / baseRate
+					extraRatios.CachedReadTokens = &rate
+				}
 			}
 
 			if price.CachedWriteTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.CachedWriteTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["cached_write_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.CachedWriteTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.CachedWriteTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.CachedWriteTokens/2, 4) / baseRate
+					extraRatios.CachedWriteTokens = &rate
+				} else {
+					rate := round(*price.CachedWriteTokens/14, 4) / baseRate
+					extraRatios.CachedWriteTokens = &rate
+				}
 			}
 
 			if price.ReasoningTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.ReasoningTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["reasoning_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.ReasoningTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.ReasoningTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.ReasoningTokens/2, 4) / baseRate
+					extraRatios.ReasoningTokens = &rate
+				} else {
+					rate := round(*price.ReasoningTokens/14, 4) / baseRate
+					extraRatios.ReasoningTokens = &rate
+				}
 			}
 
 			if price.InputTextTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputTextTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_text_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputTextTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputTextTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputTextTokens/2, 4) / baseRate
+					extraRatios.InputTextTokens = &rate
+				} else {
+					rate := round(*price.InputTextTokens/14, 4) / baseRate
+					extraRatios.InputTextTokens = &rate
+				}
 			}
 
 			if price.OutputTextTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputTextTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_text_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputTextTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputTextTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputTextTokens/2, 4) / baseRate
+					extraRatios.OutputTextTokens = &rate
+				} else {
+					rate := round(*price.OutputTextTokens/14, 4) / baseRate
+					extraRatios.OutputTextTokens = &rate
+				}
 			}
 
 			if price.InputImageTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.InputImageTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["input_image_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.InputImageTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.InputImageTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.InputImageTokens/2, 4) / baseRate
+					extraRatios.InputImageTokens = &rate
+				} else {
+					rate := round(*price.InputImageTokens/14, 4) / baseRate
+					extraRatios.InputImageTokens = &rate
+				}
 			}
 
 			if price.OutputImageTokens != nil {
-				var rate float64
-				if price.Currency == "USD" {
-					rate = round(*price.OutputImageTokens/2, 4)
+				var baseRate float64
+				if extraRelativeToInput["output_image_tokens"] {
+					baseRate = inputRate
 				} else {
-					rate = round(*price.OutputImageTokens/14, 4)
+					baseRate = outputRate
 				}
-				extraRatios.OutputImageTokens = &rate
+
+				if price.Currency == "USD" {
+					rate := round(*price.OutputImageTokens/2, 4) / baseRate
+					extraRatios.OutputImageTokens = &rate
+				} else {
+					rate := round(*price.OutputImageTokens/14, 4) / baseRate
+					extraRatios.OutputImageTokens = &rate
+				}
 			}
 		}
 

@@ -134,98 +134,80 @@
             </div>
 
             <div class="extended-prices" v-if="hasAnyExtendedPrices(price)">
-              <div class="section-title">扩展价格</div>
+              <div class="section-title">
+                <span>扩展价格</span>
+              </div>
               <div class="extended-price-grid">
-                <template v-if="hasSpecificPrice(price.input_audio_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">音频输入价格</span>
-                    <span class="ext-price-value">{{ price.input_audio_tokens }}</span>
-                    <el-tag v-if="price.temp_input_audio_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_input_audio_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.output_audio_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">音频输出价格</span>
-                    <span class="ext-price-value">{{ price.output_audio_tokens }}</span>
-                    <el-tag v-if="price.temp_output_audio_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_output_audio_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.cached_read_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">缓存读取价格</span>
-                    <span class="ext-price-value">{{ price.cached_read_tokens }}</span>
-                    <el-tag v-if="price.temp_cached_read_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_cached_read_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.cached_write_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">缓存写入价格</span>
-                    <span class="ext-price-value">{{ price.cached_write_tokens }}</span>
-                    <el-tag v-if="price.temp_cached_write_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_cached_write_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.reasoning_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">推理价格</span>
-                    <span class="ext-price-value">{{ price.reasoning_tokens }}</span>
-                    <el-tag v-if="price.temp_reasoning_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_reasoning_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.input_text_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">输入文本价格</span>
-                    <span class="ext-price-value">{{ price.input_text_tokens }}</span>
-                    <el-tag v-if="price.temp_input_text_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_input_text_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.output_text_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">输出文本价格</span>
-                    <span class="ext-price-value">{{ price.output_text_tokens }}</span>
-                    <el-tag v-if="price.temp_output_text_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_output_text_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.input_image_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">输入图片价格</span>
-                    <span class="ext-price-value">{{ price.input_image_tokens }}</span>
-                    <el-tag v-if="price.temp_input_image_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_input_image_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.output_image_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">输出图片价格</span>
-                    <span class="ext-price-value">{{ price.output_image_tokens }}</span>
-                    <el-tag v-if="price.temp_output_image_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_output_image_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
-                <template v-if="hasSpecificPrice(price.cached_tokens)">
-                  <div class="extended-price-item">
-                    <span class="ext-price-label">缓存价格</span>
-                    <span class="ext-price-value">{{ price.cached_tokens }}</span>
-                    <el-tag v-if="price.temp_cached_tokens" type="warning" size="small" effect="light">
-                      待审核: {{ price.temp_cached_tokens }}
-                    </el-tag>
-                  </div>
-                </template>
+                <div v-if="hasSpecificPrice(price.input_audio_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">音频输入</span>
+                  <span class="ext-price-value">{{ price.input_audio_tokens }}</span>
+                  <el-tag v-if="price.temp_input_audio_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_input_audio_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.output_audio_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">音频输出</span>
+                  <span class="ext-price-value">{{ price.output_audio_tokens }}</span>
+                  <el-tag v-if="price.temp_output_audio_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_output_audio_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.cached_read_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">缓存读取</span>
+                  <span class="ext-price-value">{{ price.cached_read_tokens }}</span>
+                  <el-tag v-if="price.temp_cached_read_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_cached_read_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.cached_write_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">缓存写入</span>
+                  <span class="ext-price-value">{{ price.cached_write_tokens }}</span>
+                  <el-tag v-if="price.temp_cached_write_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_cached_write_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.reasoning_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">推理</span>
+                  <span class="ext-price-value">{{ price.reasoning_tokens }}</span>
+                  <el-tag v-if="price.temp_reasoning_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_reasoning_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.input_text_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">文本输入</span>
+                  <span class="ext-price-value">{{ price.input_text_tokens }}</span>
+                  <el-tag v-if="price.temp_input_text_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_input_text_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.output_text_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">文本输出</span>
+                  <span class="ext-price-value">{{ price.output_text_tokens }}</span>
+                  <el-tag v-if="price.temp_output_text_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_output_text_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.input_image_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">图片输入</span>
+                  <span class="ext-price-value">{{ price.input_image_tokens }}</span>
+                  <el-tag v-if="price.temp_input_image_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_input_image_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.output_image_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">图片输出</span>
+                  <span class="ext-price-value">{{ price.output_image_tokens }}</span>
+                  <el-tag v-if="price.temp_output_image_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_output_image_tokens }}
+                  </el-tag>
+                </div>
+                <div v-if="hasSpecificPrice(price.cached_tokens)" class="extended-price-item">
+                  <span class="ext-price-label">缓存</span>
+                  <span class="ext-price-value">{{ price.cached_tokens }}</span>
+                  <el-tag v-if="price.temp_cached_tokens" type="warning" size="small" effect="light" class="temp-tag">
+                    {{ price.temp_cached_tokens }}
+                  </el-tag>
+                </div>
               </div>
             </div>
 
@@ -1630,9 +1612,8 @@ onMounted(() => {
   }
 }
 
-.skeleton-row {
-  padding: 10px;
-  border-bottom: 1px solid #EBEEF5;
+.skeleton {
+  min-height: 240px;
 }
 
 .pagination-container {
@@ -1736,24 +1717,24 @@ onMounted(() => {
 
 .price-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
   padding: 1rem 0;
 }
 
 .price-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.8rem;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
   height: auto;
-  min-height: 280px;
+  min-height: 240px;
 }
 
 .price-card:hover {
@@ -1767,7 +1748,7 @@ onMounted(() => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 6px;
+  height: 4px;
   background: linear-gradient(to right, #36d1dc, #5b86e5);
 }
 
@@ -1836,14 +1817,15 @@ onMounted(() => {
 }
 
 .model-name {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.5rem 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .model-meta {
@@ -1856,11 +1838,11 @@ onMounted(() => {
 .price-info {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
   background-color: #f9fafc;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .price-row {
@@ -1882,49 +1864,52 @@ onMounted(() => {
 
 .extended-prices {
   border-top: 1px solid #f0f0f0;
-  padding-top: 1rem;
-  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  margin-top: 0.3rem;
 }
 
 .section-title {
   font-weight: 600;
   color: #606266;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
 }
 
 .extended-price-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .extended-price-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
   background: #f9fafb;
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px solid #f0f0f0;
   transition: all 0.2s ease;
+  max-width: fit-content;
 }
 
 .extended-price-item:hover {
   background: #f0f2f5;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .ext-price-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #606266;
-  font-weight: 500;
+  margin-right: 0.2rem;
 }
 
 .ext-price-value {
-  font-weight: 600;
+  font-weight: 500;
   color: #303133;
-  font-size: 0.95rem;
+  font-size: 0.7rem;
 }
 
 .price-card-footer {
@@ -1958,7 +1943,7 @@ onMounted(() => {
 }
 
 .skeleton {
-  min-height: 300px;
+  min-height: 240px;
 }
 
 :deep(.el-tag) {
@@ -2093,6 +2078,18 @@ onMounted(() => {
 :deep(.el-dropdown-menu__item.is-disabled) {
   color: #C0C4CC;
   cursor: not-allowed;
+}
+
+.ext-price-label::after {
+  content: ": ";
+}
+
+.temp-tag {
+  margin-left: 4px;
+  font-size: 0.65rem !important;
+  height: 18px;
+  line-height: 16px;
+  padding: 0 4px;
 }
 </style>
 
