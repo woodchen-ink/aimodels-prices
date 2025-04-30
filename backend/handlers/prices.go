@@ -115,6 +115,17 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			return math.Abs(a-b) < epsilon
 		}
 
+		// 比较指针类型的浮点数是否相等
+		pointerPriceEqual := func(a, b *float64) bool {
+			if a == nil && b == nil {
+				return true
+			}
+			if a == nil || b == nil {
+				return false
+			}
+			return priceEqual(*a, *b)
+		}
+
 		// 检查价格是否有变化
 		if isAdmin {
 			// 管理员直接更新主字段，检查是否有实际变化
@@ -125,6 +136,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 				existingPrice.Currency == price.Currency &&
 				priceEqual(existingPrice.InputPrice, price.InputPrice) &&
 				priceEqual(existingPrice.OutputPrice, price.OutputPrice) &&
+				pointerPriceEqual(existingPrice.InputAudioTokens, price.InputAudioTokens) &&
+				pointerPriceEqual(existingPrice.OutputAudioTokens, price.OutputAudioTokens) &&
+				pointerPriceEqual(existingPrice.CachedTokens, price.CachedTokens) &&
+				pointerPriceEqual(existingPrice.CachedReadTokens, price.CachedReadTokens) &&
+				pointerPriceEqual(existingPrice.CachedWriteTokens, price.CachedWriteTokens) &&
+				pointerPriceEqual(existingPrice.ReasoningTokens, price.ReasoningTokens) &&
+				pointerPriceEqual(existingPrice.InputTextTokens, price.InputTextTokens) &&
+				pointerPriceEqual(existingPrice.OutputTextTokens, price.OutputTextTokens) &&
+				pointerPriceEqual(existingPrice.InputImageTokens, price.InputImageTokens) &&
+				pointerPriceEqual(existingPrice.OutputImageTokens, price.OutputImageTokens) &&
 				existingPrice.PriceSource == price.PriceSource {
 				// 没有变化，不需要更新
 				return *existingPrice, false, nil
@@ -138,6 +159,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			existingPrice.Currency = price.Currency
 			existingPrice.InputPrice = price.InputPrice
 			existingPrice.OutputPrice = price.OutputPrice
+			existingPrice.InputAudioTokens = price.InputAudioTokens
+			existingPrice.OutputAudioTokens = price.OutputAudioTokens
+			existingPrice.CachedTokens = price.CachedTokens
+			existingPrice.CachedReadTokens = price.CachedReadTokens
+			existingPrice.CachedWriteTokens = price.CachedWriteTokens
+			existingPrice.ReasoningTokens = price.ReasoningTokens
+			existingPrice.InputTextTokens = price.InputTextTokens
+			existingPrice.OutputTextTokens = price.OutputTextTokens
+			existingPrice.InputImageTokens = price.InputImageTokens
+			existingPrice.OutputImageTokens = price.OutputImageTokens
 			existingPrice.PriceSource = price.PriceSource
 			existingPrice.Status = "approved"
 			existingPrice.UpdatedBy = &username
@@ -148,6 +179,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			existingPrice.TempCurrency = nil
 			existingPrice.TempInputPrice = nil
 			existingPrice.TempOutputPrice = nil
+			existingPrice.TempInputAudioTokens = nil
+			existingPrice.TempOutputAudioTokens = nil
+			existingPrice.TempCachedTokens = nil
+			existingPrice.TempCachedReadTokens = nil
+			existingPrice.TempCachedWriteTokens = nil
+			existingPrice.TempReasoningTokens = nil
+			existingPrice.TempInputTextTokens = nil
+			existingPrice.TempOutputTextTokens = nil
+			existingPrice.TempInputImageTokens = nil
+			existingPrice.TempOutputImageTokens = nil
 			existingPrice.TempPriceSource = nil
 
 			// 保存更新
@@ -168,6 +209,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 				existingPrice.Currency != price.Currency ||
 				!priceEqual(existingPrice.InputPrice, price.InputPrice) ||
 				!priceEqual(existingPrice.OutputPrice, price.OutputPrice) ||
+				!pointerPriceEqual(existingPrice.InputAudioTokens, price.InputAudioTokens) ||
+				!pointerPriceEqual(existingPrice.OutputAudioTokens, price.OutputAudioTokens) ||
+				!pointerPriceEqual(existingPrice.CachedTokens, price.CachedTokens) ||
+				!pointerPriceEqual(existingPrice.CachedReadTokens, price.CachedReadTokens) ||
+				!pointerPriceEqual(existingPrice.CachedWriteTokens, price.CachedWriteTokens) ||
+				!pointerPriceEqual(existingPrice.ReasoningTokens, price.ReasoningTokens) ||
+				!pointerPriceEqual(existingPrice.InputTextTokens, price.InputTextTokens) ||
+				!pointerPriceEqual(existingPrice.OutputTextTokens, price.OutputTextTokens) ||
+				!pointerPriceEqual(existingPrice.InputImageTokens, price.InputImageTokens) ||
+				!pointerPriceEqual(existingPrice.OutputImageTokens, price.OutputImageTokens) ||
 				existingPrice.PriceSource != price.PriceSource {
 				hasChanges = true
 			}
@@ -182,6 +233,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 					(existingPrice.TempCurrency == nil || *existingPrice.TempCurrency == price.Currency) &&
 					(existingPrice.TempInputPrice == nil || priceEqual(*existingPrice.TempInputPrice, price.InputPrice)) &&
 					(existingPrice.TempOutputPrice == nil || priceEqual(*existingPrice.TempOutputPrice, price.OutputPrice)) &&
+					(existingPrice.TempInputAudioTokens == nil || pointerPriceEqual(existingPrice.TempInputAudioTokens, price.InputAudioTokens)) &&
+					(existingPrice.TempOutputAudioTokens == nil || pointerPriceEqual(existingPrice.TempOutputAudioTokens, price.OutputAudioTokens)) &&
+					(existingPrice.TempCachedTokens == nil || pointerPriceEqual(existingPrice.TempCachedTokens, price.CachedTokens)) &&
+					(existingPrice.TempCachedReadTokens == nil || pointerPriceEqual(existingPrice.TempCachedReadTokens, price.CachedReadTokens)) &&
+					(existingPrice.TempCachedWriteTokens == nil || pointerPriceEqual(existingPrice.TempCachedWriteTokens, price.CachedWriteTokens)) &&
+					(existingPrice.TempReasoningTokens == nil || pointerPriceEqual(existingPrice.TempReasoningTokens, price.ReasoningTokens)) &&
+					(existingPrice.TempInputTextTokens == nil || pointerPriceEqual(existingPrice.TempInputTextTokens, price.InputTextTokens)) &&
+					(existingPrice.TempOutputTextTokens == nil || pointerPriceEqual(existingPrice.TempOutputTextTokens, price.OutputTextTokens)) &&
+					(existingPrice.TempInputImageTokens == nil || pointerPriceEqual(existingPrice.TempInputImageTokens, price.InputImageTokens)) &&
+					(existingPrice.TempOutputImageTokens == nil || pointerPriceEqual(existingPrice.TempOutputImageTokens, price.OutputImageTokens)) &&
 					(existingPrice.TempPriceSource == nil || *existingPrice.TempPriceSource == price.PriceSource) {
 					// 与之前提交的临时值相同，不需要更新
 					hasChanges = false
@@ -201,6 +262,16 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			existingPrice.TempCurrency = &price.Currency
 			existingPrice.TempInputPrice = &price.InputPrice
 			existingPrice.TempOutputPrice = &price.OutputPrice
+			existingPrice.TempInputAudioTokens = price.InputAudioTokens
+			existingPrice.TempOutputAudioTokens = price.OutputAudioTokens
+			existingPrice.TempCachedTokens = price.CachedTokens
+			existingPrice.TempCachedReadTokens = price.CachedReadTokens
+			existingPrice.TempCachedWriteTokens = price.CachedWriteTokens
+			existingPrice.TempReasoningTokens = price.ReasoningTokens
+			existingPrice.TempInputTextTokens = price.InputTextTokens
+			existingPrice.TempOutputTextTokens = price.OutputTextTokens
+			existingPrice.TempInputImageTokens = price.InputImageTokens
+			existingPrice.TempOutputImageTokens = price.OutputImageTokens
 			existingPrice.TempPriceSource = &price.PriceSource
 			existingPrice.Status = "pending"
 			existingPrice.UpdatedBy = &username
@@ -218,6 +289,38 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			price.Status = "approved"
 		}
 		price.CreatedBy = username
+
+		// 验证扩展价格字段（如果提供）
+		if price.InputAudioTokens != nil && *price.InputAudioTokens < 0 {
+			return price, false, fmt.Errorf("音频输入价格不能为负数")
+		}
+		if price.OutputAudioTokens != nil && *price.OutputAudioTokens < 0 {
+			return price, false, fmt.Errorf("音频输出价格不能为负数")
+		}
+		if price.CachedTokens != nil && *price.CachedTokens < 0 {
+			return price, false, fmt.Errorf("缓存价格不能为负数")
+		}
+		if price.CachedReadTokens != nil && *price.CachedReadTokens < 0 {
+			return price, false, fmt.Errorf("缓存读取价格不能为负数")
+		}
+		if price.CachedWriteTokens != nil && *price.CachedWriteTokens < 0 {
+			return price, false, fmt.Errorf("缓存写入价格不能为负数")
+		}
+		if price.ReasoningTokens != nil && *price.ReasoningTokens < 0 {
+			return price, false, fmt.Errorf("推理价格不能为负数")
+		}
+		if price.InputTextTokens != nil && *price.InputTextTokens < 0 {
+			return price, false, fmt.Errorf("输入文本价格不能为负数")
+		}
+		if price.OutputTextTokens != nil && *price.OutputTextTokens < 0 {
+			return price, false, fmt.Errorf("输出文本价格不能为负数")
+		}
+		if price.InputImageTokens != nil && *price.InputImageTokens < 0 {
+			return price, false, fmt.Errorf("输入图片价格不能为负数")
+		}
+		if price.OutputImageTokens != nil && *price.OutputImageTokens < 0 {
+			return price, false, fmt.Errorf("输出图片价格不能为负数")
+		}
 
 		// 保存新记录
 		if err := database.DB.Create(&price).Error; err != nil {
@@ -326,6 +429,36 @@ func UpdatePriceStatus(c *gin.Context) {
 		if price.TempOutputPrice != nil {
 			updateMap["output_price"] = *price.TempOutputPrice
 		}
+		if price.TempInputAudioTokens != nil {
+			updateMap["input_audio_tokens"] = *price.TempInputAudioTokens
+		}
+		if price.TempOutputAudioTokens != nil {
+			updateMap["output_audio_tokens"] = *price.TempOutputAudioTokens
+		}
+		if price.TempCachedTokens != nil {
+			updateMap["cached_tokens"] = *price.TempCachedTokens
+		}
+		if price.TempCachedReadTokens != nil {
+			updateMap["cached_read_tokens"] = *price.TempCachedReadTokens
+		}
+		if price.TempCachedWriteTokens != nil {
+			updateMap["cached_write_tokens"] = *price.TempCachedWriteTokens
+		}
+		if price.TempReasoningTokens != nil {
+			updateMap["reasoning_tokens"] = *price.TempReasoningTokens
+		}
+		if price.TempInputTextTokens != nil {
+			updateMap["input_text_tokens"] = *price.TempInputTextTokens
+		}
+		if price.TempOutputTextTokens != nil {
+			updateMap["output_text_tokens"] = *price.TempOutputTextTokens
+		}
+		if price.TempInputImageTokens != nil {
+			updateMap["input_image_tokens"] = *price.TempInputImageTokens
+		}
+		if price.TempOutputImageTokens != nil {
+			updateMap["output_image_tokens"] = *price.TempOutputImageTokens
+		}
 		if price.TempPriceSource != nil {
 			updateMap["price_source"] = *price.TempPriceSource
 		}
@@ -338,6 +471,16 @@ func UpdatePriceStatus(c *gin.Context) {
 		updateMap["temp_currency"] = nil
 		updateMap["temp_input_price"] = nil
 		updateMap["temp_output_price"] = nil
+		updateMap["temp_input_audio_tokens"] = nil
+		updateMap["temp_output_audio_tokens"] = nil
+		updateMap["temp_cached_tokens"] = nil
+		updateMap["temp_cached_read_tokens"] = nil
+		updateMap["temp_cached_write_tokens"] = nil
+		updateMap["temp_reasoning_tokens"] = nil
+		updateMap["temp_input_text_tokens"] = nil
+		updateMap["temp_output_text_tokens"] = nil
+		updateMap["temp_input_image_tokens"] = nil
+		updateMap["temp_output_image_tokens"] = nil
 		updateMap["temp_price_source"] = nil
 		updateMap["updated_by"] = nil
 
@@ -361,17 +504,27 @@ func UpdatePriceStatus(c *gin.Context) {
 		} else {
 			// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
 			if err := tx.Model(&price).Updates(map[string]interface{}{
-				"status":            "approved", // 恢复为已批准状态
-				"updated_at":        time.Now(),
-				"temp_model":        nil,
-				"temp_model_type":   nil,
-				"temp_billing_type": nil,
-				"temp_channel_type": nil,
-				"temp_currency":     nil,
-				"temp_input_price":  nil,
-				"temp_output_price": nil,
-				"temp_price_source": nil,
-				"updated_by":        nil,
+				"status":                   "approved", // 恢复为已批准状态
+				"updated_at":               time.Now(),
+				"temp_model":               nil,
+				"temp_model_type":          nil,
+				"temp_billing_type":        nil,
+				"temp_channel_type":        nil,
+				"temp_currency":            nil,
+				"temp_input_price":         nil,
+				"temp_output_price":        nil,
+				"temp_input_audio_tokens":  nil,
+				"temp_output_audio_tokens": nil,
+				"temp_cached_tokens":       nil,
+				"temp_cached_read_tokens":  nil,
+				"temp_cached_write_tokens": nil,
+				"temp_reasoning_tokens":    nil,
+				"temp_input_text_tokens":   nil,
+				"temp_output_text_tokens":  nil,
+				"temp_input_image_tokens":  nil,
+				"temp_output_image_tokens": nil,
+				"temp_price_source":        nil,
+				"updated_by":               nil,
 			}).Error; err != nil {
 				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price status"})
@@ -538,6 +691,36 @@ func ApproveAllPrices(c *gin.Context) {
 			if price.TempOutputPrice != nil {
 				updateMap["output_price"] = *price.TempOutputPrice
 			}
+			if price.TempInputAudioTokens != nil {
+				updateMap["input_audio_tokens"] = *price.TempInputAudioTokens
+			}
+			if price.TempOutputAudioTokens != nil {
+				updateMap["output_audio_tokens"] = *price.TempOutputAudioTokens
+			}
+			if price.TempCachedTokens != nil {
+				updateMap["cached_tokens"] = *price.TempCachedTokens
+			}
+			if price.TempCachedReadTokens != nil {
+				updateMap["cached_read_tokens"] = *price.TempCachedReadTokens
+			}
+			if price.TempCachedWriteTokens != nil {
+				updateMap["cached_write_tokens"] = *price.TempCachedWriteTokens
+			}
+			if price.TempReasoningTokens != nil {
+				updateMap["reasoning_tokens"] = *price.TempReasoningTokens
+			}
+			if price.TempInputTextTokens != nil {
+				updateMap["input_text_tokens"] = *price.TempInputTextTokens
+			}
+			if price.TempOutputTextTokens != nil {
+				updateMap["output_text_tokens"] = *price.TempOutputTextTokens
+			}
+			if price.TempInputImageTokens != nil {
+				updateMap["input_image_tokens"] = *price.TempInputImageTokens
+			}
+			if price.TempOutputImageTokens != nil {
+				updateMap["output_image_tokens"] = *price.TempOutputImageTokens
+			}
 			if price.TempPriceSource != nil {
 				updateMap["price_source"] = *price.TempPriceSource
 			}
@@ -550,6 +733,16 @@ func ApproveAllPrices(c *gin.Context) {
 			updateMap["temp_currency"] = nil
 			updateMap["temp_input_price"] = nil
 			updateMap["temp_output_price"] = nil
+			updateMap["temp_input_audio_tokens"] = nil
+			updateMap["temp_output_audio_tokens"] = nil
+			updateMap["temp_cached_tokens"] = nil
+			updateMap["temp_cached_read_tokens"] = nil
+			updateMap["temp_cached_write_tokens"] = nil
+			updateMap["temp_reasoning_tokens"] = nil
+			updateMap["temp_input_text_tokens"] = nil
+			updateMap["temp_output_text_tokens"] = nil
+			updateMap["temp_input_image_tokens"] = nil
+			updateMap["temp_output_image_tokens"] = nil
 			updateMap["temp_price_source"] = nil
 			updateMap["updated_by"] = nil
 
@@ -575,17 +768,27 @@ func ApproveAllPrices(c *gin.Context) {
 			} else {
 				// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
 				if err := tx.Model(&price).Updates(map[string]interface{}{
-					"status":            "approved", // 恢复为已批准状态
-					"updated_at":        time.Now(),
-					"temp_model":        nil,
-					"temp_model_type":   nil,
-					"temp_billing_type": nil,
-					"temp_channel_type": nil,
-					"temp_currency":     nil,
-					"temp_input_price":  nil,
-					"temp_output_price": nil,
-					"temp_price_source": nil,
-					"updated_by":        nil,
+					"status":                   "approved", // 恢复为已批准状态
+					"updated_at":               time.Now(),
+					"temp_model":               nil,
+					"temp_model_type":          nil,
+					"temp_billing_type":        nil,
+					"temp_channel_type":        nil,
+					"temp_currency":            nil,
+					"temp_input_price":         nil,
+					"temp_output_price":        nil,
+					"temp_input_audio_tokens":  nil,
+					"temp_output_audio_tokens": nil,
+					"temp_cached_tokens":       nil,
+					"temp_cached_read_tokens":  nil,
+					"temp_cached_write_tokens": nil,
+					"temp_reasoning_tokens":    nil,
+					"temp_input_text_tokens":   nil,
+					"temp_output_text_tokens":  nil,
+					"temp_input_image_tokens":  nil,
+					"temp_output_image_tokens": nil,
+					"temp_price_source":        nil,
+					"updated_by":               nil,
 				}).Error; err != nil {
 					tx.Rollback()
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject prices"})

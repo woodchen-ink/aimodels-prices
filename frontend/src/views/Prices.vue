@@ -84,7 +84,7 @@
           </div>
         </template>
         <template v-else>
-          <div v-for="price in prices" :key="price.id" class="price-card">
+          <div v-for="price in prices" :key="price.id" class="price-card" :class="price.status">
             <div class="price-card-header">
               <div class="provider-info">
                 <el-image 
@@ -133,69 +133,96 @@
               </div>
             </div>
 
-            <div v-if="hasExtendedPrices(price)" class="extended-prices">
+            <div class="extended-prices" v-if="hasAnyExtendedPrices(price)">
               <div class="section-title">扩展价格</div>
               <div class="extended-price-grid">
-                <template v-if="price.input_audio_tokens">
+                <template v-if="hasSpecificPrice(price.input_audio_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">音频输入倍率</span>
+                    <span class="ext-price-label">音频输入价格</span>
                     <span class="ext-price-value">{{ price.input_audio_tokens }}</span>
                     <el-tag v-if="price.temp_input_audio_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_input_audio_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.cached_read_tokens">
+                <template v-if="hasSpecificPrice(price.output_audio_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">缓存读取倍率</span>
+                    <span class="ext-price-label">音频输出价格</span>
+                    <span class="ext-price-value">{{ price.output_audio_tokens }}</span>
+                    <el-tag v-if="price.temp_output_audio_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_output_audio_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="hasSpecificPrice(price.cached_read_tokens)">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">缓存读取价格</span>
                     <span class="ext-price-value">{{ price.cached_read_tokens }}</span>
                     <el-tag v-if="price.temp_cached_read_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_cached_read_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.reasoning_tokens">
+                <template v-if="hasSpecificPrice(price.cached_write_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">推理倍率</span>
+                    <span class="ext-price-label">缓存写入价格</span>
+                    <span class="ext-price-value">{{ price.cached_write_tokens }}</span>
+                    <el-tag v-if="price.temp_cached_write_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_cached_write_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="hasSpecificPrice(price.reasoning_tokens)">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">推理价格</span>
                     <span class="ext-price-value">{{ price.reasoning_tokens }}</span>
                     <el-tag v-if="price.temp_reasoning_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_reasoning_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.input_text_tokens">
+                <template v-if="hasSpecificPrice(price.input_text_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">输入文本倍率</span>
+                    <span class="ext-price-label">输入文本价格</span>
                     <span class="ext-price-value">{{ price.input_text_tokens }}</span>
                     <el-tag v-if="price.temp_input_text_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_input_text_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.output_text_tokens">
+                <template v-if="hasSpecificPrice(price.output_text_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">输出文本倍率</span>
+                    <span class="ext-price-label">输出文本价格</span>
                     <span class="ext-price-value">{{ price.output_text_tokens }}</span>
                     <el-tag v-if="price.temp_output_text_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_output_text_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.input_image_tokens">
+                <template v-if="hasSpecificPrice(price.input_image_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">输入图片倍率</span>
+                    <span class="ext-price-label">输入图片价格</span>
                     <span class="ext-price-value">{{ price.input_image_tokens }}</span>
                     <el-tag v-if="price.temp_input_image_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_input_image_tokens }}
                     </el-tag>
                   </div>
                 </template>
-                <template v-if="price.output_image_tokens">
+                <template v-if="hasSpecificPrice(price.output_image_tokens)">
                   <div class="extended-price-item">
-                    <span class="ext-price-label">输出图片倍率</span>
+                    <span class="ext-price-label">输出图片价格</span>
                     <span class="ext-price-value">{{ price.output_image_tokens }}</span>
                     <el-tag v-if="price.temp_output_image_tokens" type="warning" size="small" effect="light">
                       待审核: {{ price.temp_output_image_tokens }}
+                    </el-tag>
+                  </div>
+                </template>
+                <template v-if="hasSpecificPrice(price.cached_tokens)">
+                  <div class="extended-price-item">
+                    <span class="ext-price-label">缓存价格</span>
+                    <span class="ext-price-value">{{ price.cached_tokens }}</span>
+                    <el-tag v-if="price.temp_cached_tokens" type="warning" size="small" effect="light">
+                      待审核: {{ price.temp_cached_tokens }}
                     </el-tag>
                   </div>
                 </template>
@@ -358,6 +385,84 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
                 :controls="false" placeholder="请输入价格" />
             </template>
           </el-table-column>
+          <el-table-column label="扩展价格" min-width="280">
+            <template #default="{ row }">
+              <el-dropdown trigger="click">
+                <el-button type="primary" plain size="small">
+                  设置扩展价格 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <div class="extended-price-dropdown">
+                      <div class="dropdown-title">扩展价格设置</div>
+                      <div class="dropdown-row">
+                        <span>音频输入价格:</span>
+                        <el-input-number v-model="row.input_audio_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>音频输出价格:</span>
+                        <el-input-number v-model="row.output_audio_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>缓存读取价格:</span>
+                        <el-input-number v-model="row.cached_read_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>缓存写入价格:</span>
+                        <el-input-number v-model="row.cached_write_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>推理价格:</span>
+                        <el-input-number v-model="row.reasoning_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>输入文本价格:</span>
+                        <el-input-number v-model="row.input_text_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>输出文本价格:</span>
+                        <el-input-number v-model="row.output_text_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>输入图片价格:</span>
+                        <el-input-number v-model="row.input_image_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>输出图片价格:</span>
+                        <el-input-number v-model="row.output_image_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                      <div class="dropdown-row">
+                        <span>缓存价格:</span>
+                        <el-input-number v-model="row.cached_tokens" :precision="4" :step="0.0001" 
+                          :controls="false" :min="0" placeholder="请输入价格" />
+                      </div>
+                    </div>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <div v-if="hasAnyExtendedPrices(row)" class="batch-extended-prices">
+                <div v-if="row.input_audio_tokens" class="batch-price-tag">音频输入: {{ row.input_audio_tokens }}</div>
+                <div v-if="row.output_audio_tokens" class="batch-price-tag">音频输出: {{ row.output_audio_tokens }}</div>
+                <div v-if="row.cached_read_tokens" class="batch-price-tag">缓存读取: {{ row.cached_read_tokens }}</div>
+                <div v-if="row.cached_write_tokens" class="batch-price-tag">缓存写入: {{ row.cached_write_tokens }}</div>
+                <div v-if="row.reasoning_tokens" class="batch-price-tag">推理: {{ row.reasoning_tokens }}</div>
+                <div v-if="row.input_text_tokens" class="batch-price-tag">输入文本: {{ row.input_text_tokens }}</div>
+                <div v-if="row.output_text_tokens" class="batch-price-tag">输出文本: {{ row.output_text_tokens }}</div>
+                <div v-if="row.input_image_tokens" class="batch-price-tag">输入图片: {{ row.input_image_tokens }}</div>
+                <div v-if="row.output_image_tokens" class="batch-price-tag">输出图片: {{ row.output_image_tokens }}</div>
+                <div v-if="row.cached_tokens" class="batch-price-tag">缓存: {{ row.cached_tokens }}</div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="价格来源" min-width="200" width="200">
             <template #default="{ row }">
               <el-input v-model="row.price_source" placeholder="请输入价格来源" />
@@ -434,49 +539,49 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-divider>扩展价格（可选）</el-divider>
+            <div class="extended-price-header">
+              <h3>扩展价格（可选）</h3>
+              <p class="extended-price-tip">这些价格字段仅适用于支持特定功能的模型，留空表示不使用</p>
+            </div>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="音频输入倍率">
-              <el-input-number v-model="form.input_audio_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="缓存读取倍率">
-              <el-input-number v-model="form.cached_read_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="推理倍率">
-              <el-input-number v-model="form.reasoning_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="输入文本倍率">
-              <el-input-number v-model="form.input_text_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="输出文本倍率">
-              <el-input-number v-model="form.output_text_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="输入图片倍率">
-              <el-input-number v-model="form.input_image_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="输出图片倍率">
-              <el-input-number v-model="form.output_image_tokens" :precision="4" :step="0.0001" style="width: 100%"
-                :controls="false" placeholder="请输入倍率" />
-            </el-form-item>
+          <el-col :span="24">
+            <div class="extended-price-container">
+              <div v-if="selectedExtensionPrices.length === 0" class="no-extensions">
+                暂无扩展价格，点击下方按钮添加
+              </div>
+              <template v-else>
+                <div v-for="(type, index) in selectedExtensionPrices" :key="type" class="extension-item">
+                  <div class="extension-header">
+                    <span class="extension-label">{{ getExtensionLabel(type) }}</span>
+                    <el-button type="danger" size="small" circle @click="removeExtension(index)">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </div>
+                  <el-input-number v-model="form[type]" :precision="4" :step="0.0001" style="width: 100%"
+                    :controls="false" placeholder="请输入价格" />
+                </div>
+              </template>
+              <el-dropdown @command="addExtension" trigger="click">
+                <el-button type="primary" class="add-extension-btn">
+                  添加扩展价格 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <div class="extended-type-dropdown">
+                      <div class="dropdown-title">选择扩展价格类型</div>
+                      <el-dropdown-item 
+                        v-for="(label, type) in availableExtensionTypes" 
+                        :key="type" 
+                        :disabled="isExtensionSelected(type)"
+                        :command="type"
+                      >
+                        {{ label }}
+                      </el-dropdown-item>
+                    </div>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </el-col>
           <el-col :span="24">
             <el-form-item label="价格来源">
@@ -500,7 +605,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { Edit, Delete, Check, Close, Document, Search } from '@element-plus/icons-vue'
+import { Edit, Delete, Check, Close, Document, Search, ArrowDown } from '@element-plus/icons-vue'
 
 const props = defineProps({
   user: Object
@@ -517,7 +622,10 @@ const form = ref({
   input_price: null,
   output_price: null,
   input_audio_tokens: null,
+  output_audio_tokens: null,
+  cached_tokens: null,
   cached_read_tokens: null,
+  cached_write_tokens: null,
   reasoning_tokens: null,
   input_text_tokens: null,
   output_text_tokens: null,
@@ -638,6 +746,7 @@ const loadPrices = async () => {
 const handleEdit = (price) => {
   editingPrice.value = price
   form.value = { ...price }
+  setExtensionPricesFromPrice(price)
   dialogVisible.value = true
 }
 
@@ -682,7 +791,10 @@ const handleAdd = () => {
     input_price: null,
     output_price: null,
     input_audio_tokens: null,
+    output_audio_tokens: null,
+    cached_tokens: null,
     cached_read_tokens: null,
+    cached_write_tokens: null,
     reasoning_tokens: null,
     input_text_tokens: null,
     output_text_tokens: null,
@@ -691,6 +803,7 @@ const handleAdd = () => {
     price_source: '',
     created_by: ''
   }
+  resetExtensionPrices()
   dialogVisible.value = true
 }
 
@@ -711,7 +824,10 @@ const handleQuickEdit = (row) => {
     input_price: row.input_price,
     output_price: row.output_price,
     input_audio_tokens: row.input_audio_tokens,
+    output_audio_tokens: row.output_audio_tokens,
+    cached_tokens: row.cached_tokens,
     cached_read_tokens: row.cached_read_tokens,
+    cached_write_tokens: row.cached_write_tokens,
     reasoning_tokens: row.reasoning_tokens,
     input_text_tokens: row.input_text_tokens,
     output_text_tokens: row.output_text_tokens,
@@ -720,6 +836,7 @@ const handleQuickEdit = (row) => {
     price_source: row.price_source,
     created_by: props.user.username
   }
+  setExtensionPricesFromPrice(row)
   dialogVisible.value = true
 }
 
@@ -793,7 +910,10 @@ const handleSubmitResponse = async (response) => {
     input_price: null,
     output_price: null,
     input_audio_tokens: null,
+    output_audio_tokens: null,
+    cached_tokens: null,
     cached_read_tokens: null,
+    cached_write_tokens: null,
     reasoning_tokens: null,
     input_text_tokens: null,
     output_text_tokens: null,
@@ -887,7 +1007,10 @@ const createNewRow = () => ({
   input_price: null,
   output_price: null,
   input_audio_tokens: null,
+  output_audio_tokens: null,
+  cached_tokens: null,
   cached_read_tokens: null,
+  cached_write_tokens: null,
   reasoning_tokens: null,
   input_text_tokens: null,
   output_text_tokens: null,
@@ -1226,12 +1349,98 @@ const handleSearch = () => {
 // 添加检查是否有扩展价格的方法
 const hasExtendedPrices = (row) => {
   return row.input_audio_tokens ||
+    row.output_audio_tokens ||
     row.cached_read_tokens ||
+    row.cached_write_tokens ||
     row.reasoning_tokens ||
     row.input_text_tokens ||
     row.output_text_tokens ||
     row.input_image_tokens ||
     row.output_image_tokens
+}
+
+// 添加更细粒度的检查函数
+const hasAnyExtendedPrices = (row) => {
+  return hasSpecificPrice(row.input_audio_tokens) ||
+    hasSpecificPrice(row.output_audio_tokens) ||
+    hasSpecificPrice(row.cached_tokens) ||
+    hasSpecificPrice(row.cached_read_tokens) ||
+    hasSpecificPrice(row.cached_write_tokens) ||
+    hasSpecificPrice(row.reasoning_tokens) ||
+    hasSpecificPrice(row.input_text_tokens) ||
+    hasSpecificPrice(row.output_text_tokens) ||
+    hasSpecificPrice(row.input_image_tokens) ||
+    hasSpecificPrice(row.output_image_tokens)
+}
+
+// 检查具体价格字段是否存在且有效
+const hasSpecificPrice = (price) => {
+  return price !== null && price !== undefined && price !== ''
+}
+
+// 扩展价格类型定义
+const extensionTypes = {
+  input_audio_tokens: '音频输入价格',
+  output_audio_tokens: '音频输出价格',
+  cached_tokens: '缓存价格',
+  cached_read_tokens: '缓存读取价格',
+  cached_write_tokens: '缓存写入价格',
+  reasoning_tokens: '推理价格',
+  input_text_tokens: '输入文本价格',
+  output_text_tokens: '输出文本价格',
+  input_image_tokens: '输入图片价格',
+  output_image_tokens: '输出图片价格'
+}
+
+// 选中的扩展价格类型
+const selectedExtensionPrices = ref([])
+
+// 可用的扩展价格类型
+const availableExtensionTypes = computed(() => {
+  return extensionTypes
+})
+
+// 获取扩展类型的标签
+const getExtensionLabel = (type) => {
+  return extensionTypes[type] || type
+}
+
+// 检查扩展类型是否已选中
+const isExtensionSelected = (type) => {
+  return selectedExtensionPrices.value.includes(type)
+}
+
+// 添加扩展价格
+const addExtension = (type) => {
+  if (!isExtensionSelected(type)) {
+    selectedExtensionPrices.value.push(type)
+    form.value[type] = null
+  }
+}
+
+// 移除扩展价格
+const removeExtension = (index) => {
+  const type = selectedExtensionPrices.value[index]
+  form.value[type] = null
+  selectedExtensionPrices.value.splice(index, 1)
+}
+
+// 重置扩展价格选择
+const resetExtensionPrices = () => {
+  selectedExtensionPrices.value = []
+  Object.keys(extensionTypes).forEach(type => {
+    form.value[type] = null
+  })
+}
+
+// 从价格对象中设置扩展价格选择
+const setExtensionPricesFromPrice = (price) => {
+  selectedExtensionPrices.value = []
+  Object.keys(extensionTypes).forEach(type => {
+    if (price[type] !== undefined && price[type] !== null) {
+      selectedExtensionPrices.value.push(type)
+    }
+  })
 }
 
 onMounted(() => {
@@ -1527,8 +1736,8 @@ onMounted(() => {
 
 .price-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.2rem;
   padding: 1rem 0;
 }
 
@@ -1536,16 +1745,38 @@ onMounted(() => {
   background: #fff;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  height: auto;
+  min-height: 280px;
 }
 
 .price-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.price-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, #36d1dc, #5b86e5);
+}
+
+.price-card.pending::before {
+  background: linear-gradient(to right, #f7b733, #fc4a1a);
+}
+
+.price-card.rejected::before {
+  background: linear-gradient(to right, #ED213A, #93291E);
 }
 
 .price-card-header {
@@ -1557,25 +1788,32 @@ onMounted(() => {
 .provider-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.8rem;
 }
 
 .provider-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+  background-color: #f5f7fa;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .provider-name {
-  font-weight: 500;
+  font-weight: 600;
   color: #333;
+  font-size: 1rem;
 }
 
 .model-status {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .model-status.pending {
@@ -1594,46 +1832,52 @@ onMounted(() => {
 }
 
 .model-info {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .model-name {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.75rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  line-height: 1.3;
 }
 
 .model-meta {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-bottom: 0.75rem;
 }
 
 .price-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.7rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f9fafc;
+  border-radius: 8px;
 }
 
 .price-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .price-label {
-  color: #666;
+  color: #606266;
   min-width: 100px;
+  font-weight: 500;
 }
 
 .price-value {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: #303133;
 }
 
 .extended-prices {
@@ -1643,14 +1887,15 @@ onMounted(() => {
 }
 
 .section-title {
-  font-weight: 500;
-  color: #666;
+  font-weight: 600;
+  color: #606266;
   margin-bottom: 0.75rem;
+  font-size: 0.95rem;
 }
 
 .extended-price-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 0.75rem;
 }
 
@@ -1658,19 +1903,28 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.5rem;
+  padding: 0.75rem;
   background: #f9fafb;
   border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.extended-price-item:hover {
+  background: #f0f2f5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .ext-price-label {
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 0.8rem;
+  color: #606266;
+  font-weight: 500;
 }
 
 .ext-price-value {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: #303133;
+  font-size: 0.95rem;
 }
 
 .price-card-footer {
@@ -1686,8 +1940,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 0.8rem;
+  color: #909399;
 }
 
 .created-by {
@@ -1695,7 +1949,7 @@ onMounted(() => {
 }
 
 .created-at {
-  color: #999;
+  color: #c0c4cc;
 }
 
 .action-buttons {
@@ -1709,6 +1963,7 @@ onMounted(() => {
 
 :deep(.el-tag) {
   margin: 0;
+  font-size: 0.7rem;
 }
 
 :deep(.el-button) {
@@ -1717,6 +1972,127 @@ onMounted(() => {
 
 :deep(.el-icon) {
   font-size: 16px;
+}
+
+.extended-price-header {
+  margin: 20px 0 10px 0;
+  border-top: 1px solid #EBEEF5;
+  padding-top: 20px;
+}
+
+.extended-price-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 10px 0;
+}
+
+.extended-price-tip {
+  font-size: 13px;
+  color: #909399;
+  margin: 0;
+}
+
+.extended-price-dropdown {
+  padding: 15px;
+  min-width: 300px;
+}
+
+.dropdown-title {
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 15px;
+  font-size: 15px;
+  border-bottom: 1px solid #EBEEF5;
+  padding-bottom: 10px;
+}
+
+.dropdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dropdown-row span {
+  flex: 0 0 110px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.dropdown-row .el-input-number {
+  flex: 1;
+}
+
+.batch-extended-prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.batch-price-tag {
+  background-color: #ecf5ff;
+  color: #409EFF;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.extended-price-container {
+  border: 1px solid #EBEEF5;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background-color: #f9fafc;
+}
+
+.no-extensions {
+  color: #909399;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 20px 0;
+  font-size: 14px;
+}
+
+.extension-item {
+  border: 1px solid #EBEEF5;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #fff;
+}
+
+.extension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.extension-label {
+  font-weight: 500;
+  color: #303133;
+  font-size: 15px;
+}
+
+.add-extension-btn {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.extended-type-dropdown {
+  min-width: 220px;
+  padding: 15px;
+}
+
+:deep(.el-dropdown-menu__item.is-disabled) {
+  color: #C0C4CC;
+  cursor: not-allowed;
 }
 </style>
 

@@ -11,13 +11,28 @@ import (
 	"aimodels-prices/models"
 )
 
+// ExtraRatios 扩展价格倍率结构
+type ExtraRatios struct {
+	InputAudioTokens  *float64 `json:"input_audio_tokens,omitempty"`
+	OutputAudioTokens *float64 `json:"output_audio_tokens,omitempty"`
+	CachedTokens      *float64 `json:"cached_tokens,omitempty"`
+	CachedReadTokens  *float64 `json:"cached_read_tokens,omitempty"`
+	CachedWriteTokens *float64 `json:"cached_write_tokens,omitempty"`
+	ReasoningTokens   *float64 `json:"reasoning_tokens,omitempty"`
+	InputTextTokens   *float64 `json:"input_text_tokens,omitempty"`
+	OutputTextTokens  *float64 `json:"output_text_tokens,omitempty"`
+	InputImageTokens  *float64 `json:"input_image_tokens,omitempty"`
+	OutputImageTokens *float64 `json:"output_image_tokens,omitempty"`
+}
+
 // PriceRate 价格倍率结构
 type PriceRate struct {
-	Model       string  `json:"model"`
-	Type        string  `json:"type"`
-	ChannelType uint    `json:"channel_type"`
-	Input       float64 `json:"input"`
-	Output      float64 `json:"output"`
+	Model       string       `json:"model"`
+	Type        string       `json:"type"`
+	ChannelType uint         `json:"channel_type"`
+	Input       float64      `json:"input"`
+	Output      float64      `json:"output"`
+	ExtraRatios *ExtraRatios `json:"extra_ratios,omitempty"`
 }
 
 // GetPriceRates 获取价格倍率
@@ -34,7 +49,7 @@ func GetPriceRates(c *gin.Context) {
 
 	// 使用索引优化查询，只查询需要的字段
 	var prices []models.Price
-	if err := database.DB.Select("model, billing_type, channel_type, input_price, output_price, currency, status").
+	if err := database.DB.Select("model, billing_type, channel_type, input_price, output_price, currency, status, input_audio_tokens, output_audio_tokens, cached_tokens, cached_read_tokens, cached_write_tokens, reasoning_tokens, input_text_tokens, output_text_tokens, input_image_tokens, output_image_tokens").
 		Where("status = 'approved'").
 		Find(&prices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch prices"})
@@ -59,6 +74,119 @@ func GetPriceRates(c *gin.Context) {
 			outputRate = round(price.OutputPrice/14, 4)
 		}
 
+		// 创建额外价格倍率
+		var extraRatios *ExtraRatios
+
+		// 只有当至少有一个扩展价格字段不为nil时才创建ExtraRatios
+		if price.InputAudioTokens != nil || price.OutputAudioTokens != nil ||
+			price.CachedTokens != nil || price.CachedReadTokens != nil || price.CachedWriteTokens != nil ||
+			price.ReasoningTokens != nil || price.InputTextTokens != nil || price.OutputTextTokens != nil ||
+			price.InputImageTokens != nil || price.OutputImageTokens != nil {
+
+			extraRatios = &ExtraRatios{}
+
+			// 计算各扩展价格字段的倍率
+			if price.InputAudioTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputAudioTokens/2, 4)
+				} else {
+					rate = round(*price.InputAudioTokens/14, 4)
+				}
+				extraRatios.InputAudioTokens = &rate
+			}
+
+			if price.OutputAudioTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputAudioTokens/2, 4)
+				} else {
+					rate = round(*price.OutputAudioTokens/14, 4)
+				}
+				extraRatios.OutputAudioTokens = &rate
+			}
+
+			if price.CachedTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedTokens/2, 4)
+				} else {
+					rate = round(*price.CachedTokens/14, 4)
+				}
+				extraRatios.CachedTokens = &rate
+			}
+
+			if price.CachedReadTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedReadTokens/2, 4)
+				} else {
+					rate = round(*price.CachedReadTokens/14, 4)
+				}
+				extraRatios.CachedReadTokens = &rate
+			}
+
+			if price.CachedWriteTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedWriteTokens/2, 4)
+				} else {
+					rate = round(*price.CachedWriteTokens/14, 4)
+				}
+				extraRatios.CachedWriteTokens = &rate
+			}
+
+			if price.ReasoningTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.ReasoningTokens/2, 4)
+				} else {
+					rate = round(*price.ReasoningTokens/14, 4)
+				}
+				extraRatios.ReasoningTokens = &rate
+			}
+
+			if price.InputTextTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputTextTokens/2, 4)
+				} else {
+					rate = round(*price.InputTextTokens/14, 4)
+				}
+				extraRatios.InputTextTokens = &rate
+			}
+
+			if price.OutputTextTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputTextTokens/2, 4)
+				} else {
+					rate = round(*price.OutputTextTokens/14, 4)
+				}
+				extraRatios.OutputTextTokens = &rate
+			}
+
+			if price.InputImageTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputImageTokens/2, 4)
+				} else {
+					rate = round(*price.InputImageTokens/14, 4)
+				}
+				extraRatios.InputImageTokens = &rate
+			}
+
+			if price.OutputImageTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputImageTokens/2, 4)
+				} else {
+					rate = round(*price.OutputImageTokens/14, 4)
+				}
+				extraRatios.OutputImageTokens = &rate
+			}
+		}
+
 		// 创建当前价格的PriceRate
 		currentRate := PriceRate{
 			Model:       price.Model,
@@ -66,6 +194,7 @@ func GetPriceRates(c *gin.Context) {
 			ChannelType: price.ChannelType,
 			Input:       inputRate,
 			Output:      outputRate,
+			ExtraRatios: extraRatios,
 		}
 
 		// 转换为小写以实现不区分大小写比较
@@ -115,7 +244,7 @@ func GetOfficialPriceRates(c *gin.Context) {
 	// 使用索引优化查询，只查询需要的字段，并添加厂商ID筛选条件
 	var prices []models.Price
 	result := database.DB.Model(&models.Price{}).
-		Select("model", "billing_type", "channel_type", "input_price", "output_price", "currency", "status").
+		Select("model, billing_type, channel_type, input_price, output_price, currency, status, input_audio_tokens, output_audio_tokens, cached_tokens, cached_read_tokens, cached_write_tokens, reasoning_tokens, input_text_tokens, output_text_tokens, input_image_tokens, output_image_tokens").
 		Where(&models.Price{Status: "approved"}).
 		Where("channel_type < ?", 1000).
 		Find(&prices)
@@ -143,6 +272,119 @@ func GetOfficialPriceRates(c *gin.Context) {
 			outputRate = round(price.OutputPrice/14, 4)
 		}
 
+		// 创建额外价格倍率
+		var extraRatios *ExtraRatios
+
+		// 只有当至少有一个扩展价格字段不为nil时才创建ExtraRatios
+		if price.InputAudioTokens != nil || price.OutputAudioTokens != nil ||
+			price.CachedTokens != nil || price.CachedReadTokens != nil || price.CachedWriteTokens != nil ||
+			price.ReasoningTokens != nil || price.InputTextTokens != nil || price.OutputTextTokens != nil ||
+			price.InputImageTokens != nil || price.OutputImageTokens != nil {
+
+			extraRatios = &ExtraRatios{}
+
+			// 计算各扩展价格字段的倍率
+			if price.InputAudioTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputAudioTokens/2, 4)
+				} else {
+					rate = round(*price.InputAudioTokens/14, 4)
+				}
+				extraRatios.InputAudioTokens = &rate
+			}
+
+			if price.OutputAudioTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputAudioTokens/2, 4)
+				} else {
+					rate = round(*price.OutputAudioTokens/14, 4)
+				}
+				extraRatios.OutputAudioTokens = &rate
+			}
+
+			if price.CachedTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedTokens/2, 4)
+				} else {
+					rate = round(*price.CachedTokens/14, 4)
+				}
+				extraRatios.CachedTokens = &rate
+			}
+
+			if price.CachedReadTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedReadTokens/2, 4)
+				} else {
+					rate = round(*price.CachedReadTokens/14, 4)
+				}
+				extraRatios.CachedReadTokens = &rate
+			}
+
+			if price.CachedWriteTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.CachedWriteTokens/2, 4)
+				} else {
+					rate = round(*price.CachedWriteTokens/14, 4)
+				}
+				extraRatios.CachedWriteTokens = &rate
+			}
+
+			if price.ReasoningTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.ReasoningTokens/2, 4)
+				} else {
+					rate = round(*price.ReasoningTokens/14, 4)
+				}
+				extraRatios.ReasoningTokens = &rate
+			}
+
+			if price.InputTextTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputTextTokens/2, 4)
+				} else {
+					rate = round(*price.InputTextTokens/14, 4)
+				}
+				extraRatios.InputTextTokens = &rate
+			}
+
+			if price.OutputTextTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputTextTokens/2, 4)
+				} else {
+					rate = round(*price.OutputTextTokens/14, 4)
+				}
+				extraRatios.OutputTextTokens = &rate
+			}
+
+			if price.InputImageTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.InputImageTokens/2, 4)
+				} else {
+					rate = round(*price.InputImageTokens/14, 4)
+				}
+				extraRatios.InputImageTokens = &rate
+			}
+
+			if price.OutputImageTokens != nil {
+				var rate float64
+				if price.Currency == "USD" {
+					rate = round(*price.OutputImageTokens/2, 4)
+				} else {
+					rate = round(*price.OutputImageTokens/14, 4)
+				}
+				extraRatios.OutputImageTokens = &rate
+			}
+		}
+
 		// 创建当前价格的PriceRate
 		currentRate := PriceRate{
 			Model:       price.Model,
@@ -150,6 +392,7 @@ func GetOfficialPriceRates(c *gin.Context) {
 			ChannelType: price.ChannelType,
 			Input:       inputRate,
 			Output:      outputRate,
+			ExtraRatios: extraRatios,
 		}
 
 		// 转换为小写以实现不区分大小写比较
