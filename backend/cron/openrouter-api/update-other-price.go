@@ -17,10 +17,10 @@ import (
 
 // 定义厂商ID映射
 var authorToChannelType = map[string]uint{
-	"openai":    1,
-	"anthropic": 14,
-	"google":    25,
-	"x-ai":      1001,
+	// "openai":    1,
+	// "anthropic": 14,
+	// "google":    25,
+	"x-ai": 1001,
 }
 
 // 定义黑名单列表
