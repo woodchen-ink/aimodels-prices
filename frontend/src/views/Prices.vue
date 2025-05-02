@@ -101,7 +101,10 @@
 
             <div class="model-info">
               <h3 class="model-name">
-                {{ price.model }}
+                <span class="copyable-model-name" @click="copyModelName(price.model)" title="点击复制模型名称">
+                  {{ price.model }}
+                  <el-icon class="copy-icon"><Document /></el-icon>
+                </span>
                 <el-tag v-if="price.temp_model && price.temp_model !== 'NULL'" 
                   type="warning" size="small" effect="light">
                   待审核: {{ price.temp_model }}
@@ -644,6 +647,22 @@ const billingTypeMap = {
 
 const getStatus = (status) => statusMap[status] || status
 const getBillingType = (type) => billingTypeMap[type] || type
+
+// 复制模型名称到剪贴板
+const copyModelName = (modelName) => {
+  navigator.clipboard.writeText(modelName)
+    .then(() => {
+      ElMessage({
+        message: `已复制模型名称: ${modelName}`,
+        type: 'success',
+        duration: 2000
+      })
+    })
+    .catch(err => {
+      console.error('复制失败:', err)
+      ElMessage.error('复制失败')
+    })
+}
 
 // 添加getModelType函数
 const getModelType = (type) => {
@@ -1826,6 +1845,33 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 0.5rem;
   line-height: 1.2;
+}
+
+.copyable-model-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  padding-right: 24px;
+  transition: color 0.2s ease;
+}
+
+.copyable-model-name:hover {
+  color: #409EFF;
+}
+
+.copy-icon {
+  font-size: 14px;
+  opacity: 0.6;
+  position: absolute;
+  right: 0;
+  transition: all 0.2s ease;
+}
+
+.copyable-model-name:hover .copy-icon {
+  opacity: 1;
+  color: #409EFF;
 }
 
 .model-meta {
