@@ -216,8 +216,16 @@
 
             <div class="price-card-footer">
               <div class="meta-info">
-                <span class="created-by">创建者: {{ price.created_by }}</span>
-                <span class="created-at">{{ new Date(price.created_at).toLocaleString() }}</span>
+                <span class="created-by"><el-icon><User /></el-icon> 创建者: {{ price.created_by }}</span>
+                <span class="updated-at"><el-icon><Timer /></el-icon> 更新时间: {{ new Date(price.updated_at).toLocaleString() }}</span>
+                <div v-if="price.price_source" class="price-source">
+                  <span class="source-label"><el-icon><InfoFilled /></el-icon> 价格来源:</span>
+                  <a v-if="isValidUrl(price.price_source)" :href="price.price_source" target="_blank" class="source-link">
+                    <el-icon><Link /></el-icon>
+                    <span>{{ formatSourceUrl(price.price_source) }}</span>
+                  </a>
+                  <span v-else>{{ price.price_source }}</span>
+                </div>
               </div>
               <div class="action-buttons">
                 <template v-if="isAdmin">
@@ -590,7 +598,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { Edit, Delete, Check, Close, Document, Search, ArrowDown } from '@element-plus/icons-vue'
+import { Edit, Delete, Check, Close, Document, Search, ArrowDown, User, Timer, InfoFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
   user: Object
@@ -1970,17 +1978,47 @@ onMounted(() => {
 .meta-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.8rem;
-  color: #909399;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #606266;
+}
+
+.meta-info .el-icon {
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 .created-by {
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
-.created-at {
-  color: #c0c4cc;
+.updated-at {
+  color: #409EFF;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.price-source {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.source-label {
+  display: flex;
+  align-items: center;
+  margin-right: 5px;
+}
+
+.source-link {
+  color: #409EFF;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .action-buttons {
