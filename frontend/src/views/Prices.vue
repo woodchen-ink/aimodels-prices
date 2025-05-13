@@ -216,10 +216,10 @@
 
             <div class="price-card-footer">
               <div class="meta-info">
-                <span class="created-by"><el-icon><User /></el-icon> 创建者: {{ price.created_by }}</span>
-                <span class="updated-at"><el-icon><Timer /></el-icon> 更新时间: {{ new Date(price.updated_at).toLocaleString() }}</span>
+                <span class="created-by"><el-icon><User /></el-icon> {{ price.created_by }}</span>
+                <span class="updated-at"><el-icon><Timer /></el-icon> {{ new Date(price.updated_at).toLocaleString() }}</span>
                 <div v-if="price.price_source" class="price-source">
-                  <span class="source-label"><el-icon><InfoFilled /></el-icon> 价格来源:</span>
+                  <span class="source-label"><el-icon><InfoFilled /></el-icon></span>
                   <a v-if="isValidUrl(price.price_source)" :href="price.price_source" target="_blank" class="source-link">
                     <el-icon><Link /></el-icon>
                     <span>{{ formatSourceUrl(price.price_source) }}</span>
