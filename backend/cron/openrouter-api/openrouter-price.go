@@ -16,7 +16,7 @@ import (
 
 const (
 	OpenRouterAPIURL = "https://openrouter.ai/api/frontend/models"
-	ChannelType      = 1002
+	ChannelType      = 20
 	BillingType      = "tokens"
 	Currency         = "USD"
 	PriceSource      = "https://openrouter.ai/models"
