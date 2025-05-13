@@ -656,6 +656,26 @@ const billingTypeMap = {
 const getStatus = (status) => statusMap[status] || status
 const getBillingType = (type) => billingTypeMap[type] || type
 
+// 检查URL是否有效
+const isValidUrl = (url) => {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// 格式化URL以便显示
+const formatSourceUrl = (url) => {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '')
+  } catch {
+    return url
+  }
+}
+
 // 复制模型名称到剪贴板
 const copyModelName = (modelName) => {
   navigator.clipboard.writeText(modelName)
