@@ -96,33 +96,33 @@ func UpdateProvider(c *gin.Context) {
 		// 开始事务
 		tx := database.DB.Begin()
 
-		// 更新price表中的channel_type
+		// 1. 先创建新记录
+		provider.CreatedAt = time.Now()
+		provider.UpdatedAt = time.Now()
+		if err := tx.Create(&provider).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new provider"})
+			return
+		}
+
+		// 2. 更新price表中的channel_type
 		if err := tx.Model(&models.Price{}).Where("channel_type = ?", oldID).Update("channel_type", provider.ID).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price references"})
 			return
 		}
 
-		// 更新price表中的temp_channel_type
+		// 3. 更新price表中的temp_channel_type
 		if err := tx.Model(&models.Price{}).Where("temp_channel_type = ?", oldID).Update("temp_channel_type", provider.ID).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price temp references"})
 			return
 		}
 
-		// 删除旧记录
+		// 4. 删除旧记录
 		if err := tx.Delete(&existingProvider).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete old provider"})
-			return
-		}
-
-		// 创建新记录
-		provider.CreatedAt = time.Now()
-		provider.UpdatedAt = time.Now()
-		if err := tx.Create(&provider).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new provider"})
 			return
 		}
 
