@@ -221,7 +221,6 @@
                 <div v-if="price.price_source" class="price-source">
                   <span class="source-label"><el-icon><InfoFilled /></el-icon></span>
                   <a v-if="isValidUrl(price.price_source)" :href="price.price_source" target="_blank" class="source-link">
-                    <el-icon><Link /></el-icon>
                     <span>{{ formatSourceUrl(price.price_source) }}</span>
                   </a>
                   <span v-else>{{ price.price_source }}</span>
