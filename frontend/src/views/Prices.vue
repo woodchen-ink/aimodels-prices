@@ -117,20 +117,26 @@
               </div>
             </div>
 
-            <div class="price-info">
-              <div class="price-row">
-                <span class="price-label">输入价格(M):</span>
-                <span class="price-value">{{ price.input_price === 0 ? '免费' : price.input_price }}</span>
+            <div class="price-info new-price-layout">
+              <div class="price-box input-price-box">
+                <div class="price-value-main">{{ price.input_price === 0 ? '免费' : price.input_price }}</div>
+                <div class="price-description">
+                  <span class="price-label-small">输入价格</span>
+                  <span class="price-unit-small">(M)</span>
+                </div>
                 <el-tag v-if="price.temp_input_price !== null && price.temp_input_price !== undefined" 
-                  type="warning" size="small" effect="light">
+                  type="warning" size="small" effect="light" class="pending-tag">
                   待审核: {{ price.temp_input_price === 0 ? '免费' : price.temp_input_price }}
                 </el-tag>
               </div>
-              <div class="price-row">
-                <span class="price-label">输出价格(M):</span>
-                <span class="price-value">{{ price.output_price === 0 ? '免费' : price.output_price }}</span>
+              <div class="price-box output-price-box">
+                <div class="price-value-main">{{ price.output_price === 0 ? '免费' : price.output_price }}</div>
+                <div class="price-description">
+                  <span class="price-label-small">输出价格</span>
+                  <span class="price-unit-small">(M)</span>
+                </div>
                 <el-tag v-if="price.temp_output_price !== null && price.temp_output_price !== undefined" 
-                  type="warning" size="small" effect="light">
+                  type="warning" size="small" effect="light" class="pending-tag">
                   待审核: {{ price.temp_output_price === 0 ? '免费' : price.temp_output_price }}
                 </el-tag>
               </div>
@@ -1771,116 +1777,125 @@ onMounted(() => {
 .price-card {
   background: #fff;
   border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0.75rem; /* 减小内边距 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1); /* 更柔和的阴影 */
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
-  transition: all 0.3s ease;
+  gap: 0.5rem; /* 减小元素间距 */
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
   height: auto;
-  min-height: 240px;
+  min-height: 200px; /* 减小最小高度 */
+  border: 1px solid #e0e0e0; /* 调整边框颜色，使其更明显一点 */
+  /* 移除左侧彩色条相关的 ::before 伪元素样式 */
 }
 
 .price-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 稍微加深悬停阴影 */
+  transform: translateY(-2px);
+  border-color: #d0d0d0; /* 悬停时边框颜色加深 */
 }
 
-.price-card::before {
+/* .price-card::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(to right, #36d1dc, #5b86e5);
+  width: 4px; 
+  height: 100%;
+  background: #409EFF; 
 }
 
 .price-card.pending::before {
-  background: linear-gradient(to right, #f7b733, #fc4a1a);
+  background: #E6A23C; 
 }
 
 .price-card.rejected::before {
-  background: linear-gradient(to right, #ED213A, #93291E);
-}
+  background: #F56C6C; 
+} */
 
 .price-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f0f0f0; /* 将分隔线改为实线，更清晰 */
 }
 
 .provider-info {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.5rem; /* 减小间距 */
 }
 
 .provider-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 20px; /* 减小图标大小 */
+  height: 20px;
+  border-radius: 4px;
   object-fit: contain;
   background-color: #f5f7fa;
   padding: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .provider-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
+  font-weight: 500; /* 减轻字重 */
+  color: #606266; /* 使用 Element Plus 文本颜色 */
+  font-size: 0.9rem; /* 减小字体 */
 }
 
 .model-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 0.15rem 0.5rem; /* 减小内边距 */
+  border-radius: 4px; /* 减小圆角 */
+  font-size: 0.7rem; /* 减小字体 */
+  font-weight: 500;
   letter-spacing: 0.5px;
-  text-transform: uppercase;
 }
 
 .model-status.pending {
-  background: #fff7e6;
-  color: #d46b08;
+  background: #fdf6ec; /* 使用 Element Plus 警告色背景 */
+  color: #E6A23C;
 }
 
 .model-status.approved {
-  background: #f6ffed;
-  color: #389e0d;
+  background: #f0f9eb; /* 使用 Element Plus 成功色背景 */
+  color: #67C23A;
 }
 
 .model-status.rejected {
-  background: #fff1f0;
-  color: #cf1322;
+  background: #fef0f0; /* 使用 Element Plus 危险色背景 */
+  color: #F56C6C;
 }
 
 .model-info {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
+  min-height: 50px; /* 减小最小高度 */
+  display: flex;
+  flex-direction: column;
 }
 
 .model-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  line-height: 1.2;
+  font-size: 1.1rem; /* 减小字体 */
+  font-weight: 600; /* 减轻字重 */
+  color: #303133; /* 使用 Element Plus 标题颜色 */
+  line-height: 1.3;
+  max-height: calc(1.3em * 2);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  margin: 0 0 0.3rem 0; /* 减小下边距 */
 }
 
 .copyable-model-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px; /* 减小间距 */
   cursor: pointer;
   position: relative;
-  padding-right: 24px;
+  padding-right: 20px; /* 减小右内边距 */
   transition: color 0.2s ease;
 }
 
@@ -1889,8 +1904,8 @@ onMounted(() => {
 }
 
 .copy-icon {
-  font-size: 14px;
-  opacity: 0.6;
+  font-size: 12px; /* 减小图标 */
+  opacity: 0.5;
   position: absolute;
   right: 0;
   transition: all 0.2s ease;
@@ -1903,20 +1918,72 @@ onMounted(() => {
 
 .model-meta {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.3rem; /* 减小间距 */
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem; /* 减小下边距 */
 }
 
 .price-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row; /* 直接设置为水平排列 */
+  justify-content: space-between;
+  gap: 0.5rem; /* 减小间距 */
   padding: 0.5rem;
-  margin-top: 0.5rem;
-  background-color: #f9fafc;
-  border-radius: 6px;
+  margin-top: 0.3rem; /* 减小上边距 */
+  background-color: #f5f7fa; /* 更淡的背景色 */
+  border-radius: 4px; /* 减小圆角 */
 }
+
+.price-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem; /* 减小内边距 */
+  text-align: center;
+  position: relative;
+}
+
+.input-price-box::after {
+  content: '';
+  position: absolute;
+  right: -0.25rem; /* 调整分隔线位置 */
+  top: 20%;
+  bottom: 20%;
+  width: 1px;
+  background-color: #dcdfe6; /* 使用 Element Plus 边框颜色 */
+}
+
+.price-value-main {
+  font-size: 1.2rem; /* 减小价格字体 */
+  font-weight: 500; /* 减轻字重 */
+  color: #303133; /* 使用 Element Plus 文本颜色 */
+  line-height: 1.2;
+}
+
+.price-description {
+  margin-top: 0.1rem; /* 减小间距 */
+}
+
+.price-label-small {
+  font-size: 0.7rem; /* 减小描述字体 */
+  color: #909399; /* 使用 Element Plus 次要文本颜色 */
+}
+
+.price-unit-small {
+  font-size: 0.65rem; /* 减小单位字体 */
+  color: #c0c4cc; /* 使用 Element Plus 占位符颜色 */
+  margin-left: 2px;
+}
+
+.pending-tag {
+  margin-top: 0.2rem; /* 减小上边距 */
+  font-size: 0.6rem; /* 减小字体 */
+  padding: 0 3px; /* 减小内边距 */
+  height: auto;
+}
+
 
 .price-row {
   display: flex;
@@ -1936,16 +2003,16 @@ onMounted(() => {
 }
 
 .extended-prices {
-  border-top: 1px solid #f0f0f0;
-  padding-top: 0.5rem;
-  margin-top: 0.3rem;
+  border-top: 1px solid #f0f0f0; /* 将分隔线改为实线 */
+  padding-top: 0.3rem; /* 减小上内边距 */
+  margin-top: 0.2rem; /* 减小上边距 */
 }
 
 .section-title {
-  font-weight: 600;
-  color: #606266;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
+  font-weight: 500; /* 减轻字重 */
+  color: #909399; /* 使用 Element Plus 次要文本颜色 */
+  font-size: 0.75rem; /* 减小字体 */
+  margin-bottom: 0.3rem; /* 减小下边距 */
   display: flex;
   align-items: center;
 }
@@ -1953,42 +2020,42 @@ onMounted(() => {
 .extended-price-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.3rem; /* 减小间距 */
+  margin-bottom: 0.3rem; /* 减小下边距 */
 }
 
 .extended-price-item {
-  font-size: 0.7rem;
+  font-size: 0.65rem; /* 减小字体 */
   display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.5rem;
-  background: #f9fafb;
-  border-radius: 4px;
-  border: 1px solid #f0f0f0;
+  padding: 0.2rem 0.3rem; /* 减小内边距 */
+  background: #f5f7fa; /* 使用与价格信息相同的背景色 */
+  border-radius: 3px; /* 减小圆角 */
+  border: none; /* 移除边框 */
   transition: all 0.2s ease;
   max-width: fit-content;
 }
 
 .extended-price-item:hover {
-  background: #f0f2f5;
+  background: #ecf5ff; /* 使用 Element Plus 主色调背景 */
 }
 
 .ext-price-label {
-  font-size: 0.7rem;
-  color: #606266;
+  font-size: 0.65rem; /* 减小字体 */
+  color: #909399; /* 使用 Element Plus 次要文本颜色 */
   margin-right: 0.2rem;
 }
 
 .ext-price-value {
   font-weight: 500;
-  color: #303133;
-  font-size: 0.7rem;
+  color: #606266; /* 使用 Element Plus 主要文本颜色 */
+  font-size: 0.65rem; /* 减小字体 */
 }
 
 .price-card-footer {
   margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
+  padding-top: 0.5rem; /* 减小上内边距 */
+  border-top: 1px solid #f0f0f0; /* 将分隔线改为实线 */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1997,25 +2064,26 @@ onMounted(() => {
 .meta-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #606266;
+  gap: 0.3rem; /* 减小间距 */
+  font-size: 0.7rem; /* 减小字体 */
+  color: #909399; /* 使用 Element Plus 次要文本颜色 */
 }
 
 .meta-info .el-icon {
-  margin-right: 4px;
+  margin-right: 3px; /* 减小右边距 */
   vertical-align: middle;
+  font-size: 0.8rem; /* 减小图标 */
 }
 
 .created-by {
-  font-weight: 500;
+  font-weight: normal; /* 使用正常字重 */
   display: flex;
   align-items: center;
 }
 
 .updated-at {
-  color: #409EFF;
-  font-weight: 500;
+  color: #909399; /* 使用 Element Plus 次要文本颜色 */
+  font-weight: normal; /* 使用正常字重 */
   display: flex;
   align-items: center;
 }
@@ -2023,13 +2091,13 @@ onMounted(() => {
 .price-source {
   display: flex;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 1px; /* 减小上边距 */
 }
 
 .source-label {
   display: flex;
   align-items: center;
-  margin-right: 5px;
+  margin-right: 3px; /* 减小右边距 */
 }
 
 .source-link {
@@ -2037,7 +2105,7 @@ onMounted(() => {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px; /* 减小间距 */
 }
 
 .action-buttons {
