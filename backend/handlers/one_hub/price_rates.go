@@ -1,6 +1,7 @@
 package one_hub
 
 import (
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -49,13 +50,25 @@ var extraRelativeToInput = map[string]bool{
 	"output_image_tokens": false,
 }
 
+// round 四舍五入到指定小数位，使用 math 包提供精确计算
+func round(num float64, precision int) float64 {
+	if precision < 0 {
+		return num
+	}
+	// 使用 math.Pow 计算倍数，避免循环累积误差
+	multiplier := math.Pow(10, float64(precision))
+	// 使用 math.Round 进行精确四舍五入
+	return math.Round(num*multiplier) / multiplier
+}
+
 // 计算安全倍率，避免除以零
 func calculateSafeRatio(value, baseRate float64) float64 {
 	// 如果基准率为0或接近0，返回1作为默认倍率
 	if baseRate < 0.0000001 {
 		return 1.0 // 如果基准率接近0，返回1作为默认倍率
 	}
-	return value / baseRate
+	// 计算倍率并四舍五入到4位小数
+	return round(value/baseRate, 4)
 }
 
 // GetPriceRates 获取价格倍率
@@ -634,13 +647,4 @@ func GetOfficialPriceRates(c *gin.Context) {
 func ClearRatesCache() {
 	database.GlobalCache.Delete("one_hub_price_rates")
 	database.GlobalCache.Delete("one_hub_official_price_rates")
-}
-
-// round 四舍五入到指定小数位
-func round(num float64, precision int) float64 {
-	precision10 := float64(1)
-	for i := 0; i < precision; i++ {
-		precision10 *= 10
-	}
-	return float64(int(num*precision10+0.5)) / precision10
 }
