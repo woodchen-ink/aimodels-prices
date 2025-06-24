@@ -77,7 +77,7 @@ func Logout(c *gin.Context) {
 		database.DB.Where("id = ?", cookie).Delete(&models.Session{})
 	}
 
-	c.SetCookie("session", "", -1, "/", "aimodels-prices.q58.club", true, true)
+	c.SetCookie("session", "", -1, "/", "ai-prices.sunai.net", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
@@ -237,8 +237,8 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 设置 cookie
-	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "aimodels-prices.q58.club", true, true)
+	c.SetCookie("session", sessionID, int(24*time.Hour.Seconds()), "/", "ai-prices.sunai.net", true, true)
 
 	// 重定向到前端
-	c.Redirect(http.StatusTemporaryRedirect, "https://aimodels-prices.q58.club")
+	c.Redirect(http.StatusTemporaryRedirect, "https://ai-prices.sunai.net")
 }
