@@ -20,7 +20,7 @@
         </ul>
 
         <h2>交流讨论</h2>
-        <p>请在帖子下留言: <a href="https://www.q58.club/t/topic/277" target="_blank">https://www.q58.club/t/topic/277</a></p>
+        <p>请在帖子下留言: <a href="https://www.sunai.net/t/topic/277" target="_blank">https://www.sunai.net/t/topic/277</a></p>
 
         <h2>免责声明</h2>
         <p>

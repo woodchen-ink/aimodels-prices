@@ -36,7 +36,7 @@
 
     <el-footer height="60px">
       <div class="footer-content">
-        <p>© 2025 Q58 AI模型价格 | <a href="https://www.q58.club/t/topic/277?u=wood" target="_blank">介绍帖子</a></p>
+        <p>© 2025 SUNAI | <a href="https://www.sunai.net/t/topic/277" target="_blank">介绍帖子</a></p>
       </div>
     </el-footer>
   </el-container>
