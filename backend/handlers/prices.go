@@ -482,7 +482,6 @@ func UpdatePriceStatus(c *gin.Context) {
 		updateMap["temp_input_image_tokens"] = nil
 		updateMap["temp_output_image_tokens"] = nil
 		updateMap["temp_price_source"] = nil
-		updateMap["updated_by"] = nil
 
 		if err := tx.Model(&price).Updates(updateMap).Error; err != nil {
 			tx.Rollback()
@@ -744,7 +743,6 @@ func ApproveAllPrices(c *gin.Context) {
 			updateMap["temp_input_image_tokens"] = nil
 			updateMap["temp_output_image_tokens"] = nil
 			updateMap["temp_price_source"] = nil
-			updateMap["updated_by"] = nil
 
 			if err := tx.Model(&price).Updates(updateMap).Error; err != nil {
 				tx.Rollback()
