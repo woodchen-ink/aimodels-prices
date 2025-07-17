@@ -222,7 +222,7 @@
 
             <div class="price-card-footer">
               <div class="meta-info">
-                <span class="created-by"><el-icon><User /></el-icon> {{ price.created_by }}</span>
+                <span class="updated-by"><el-icon><User /></el-icon> {{ price.updated_by || price.created_by }}</span>
                 <span class="updated-at"><el-icon><Timer /></el-icon> {{ new Date(price.updated_at).toLocaleString() }}</span>
                 <div v-if="price.price_source" class="price-source">
                   <span class="source-label"><el-icon><InfoFilled /></el-icon></span>
@@ -2075,7 +2075,7 @@ onMounted(() => {
   font-size: 0.8rem; /* 减小图标 */
 }
 
-.created-by {
+.updated-by {
   font-weight: normal; /* 使用正常字重 */
   display: flex;
   align-items: center;
