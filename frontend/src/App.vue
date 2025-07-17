@@ -10,7 +10,7 @@
             <el-button @click="$router.push('/prices')" :type="$route.path === '/prices' ? 'primary' : ''">价格列表</el-button>
             <el-button @click="$router.push('/providers')" :type="$route.path === '/providers' ? 'primary' : ''">模型厂商</el-button>
             <el-button @click="$router.push('/model-types')" :type="$route.path === '/model-types' ? 'primary' : ''">模型类别</el-button>
-            <el-button @click="window.open('https://www.sunai.net/t/topic/937', '_blank')">论坛反馈</el-button>
+            <el-button @click="() => window.open('https://www.sunai.net/t/topic/937', '_blank')">论坛反馈</el-button>
           </div>
         </div>
         <div class="auth-buttons">
