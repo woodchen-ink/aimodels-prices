@@ -7,6 +7,7 @@ import (
 	"github.com/robfig/cron/v3"
 
 	openrouter_api "aimodels-prices/cron/openrouter-api"
+	price_audit "aimodels-prices/cron/price-audit"
 	siliconflow_api "aimodels-prices/cron/siliconflow-api"
 )
 
@@ -41,6 +42,18 @@ func Init() {
 
 	if err != nil {
 		log.Printf("注册价格更新定时任务失败: %v", err)
+	}
+
+	// 注册价格审核检查任务
+	// 每5分钟执行一次
+	_, err = cronScheduler.AddFunc("0 */5 * * * *", func() {
+		if err := price_audit.CheckPendingPrices(); err != nil {
+			log.Printf("价格审核检查任务执行失败: %v", err)
+		}
+	})
+
+	if err != nil {
+		log.Printf("注册价格审核检查定时任务失败: %v", err)
 	}
 
 	// 启动定时任务

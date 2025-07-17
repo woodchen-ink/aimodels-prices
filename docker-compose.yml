@@ -7,6 +7,8 @@ services:
       - GIN_MODE=release
       - PORT=8080
       - TZ=Asia/Shanghai
+      # 飞书Webhook配置（可选）
+      # - FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/your-webhook-url
     volumes:
       - ./data:/app/data
     ports:

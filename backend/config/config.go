@@ -21,6 +21,9 @@ type Config struct {
 
 	// SQLite配置（用于数据迁移）
 	SQLitePath string
+
+	// 飞书Webhook配置
+	FeishuWebhookURL string
 }
 
 func LoadConfig() (*Config, error) {
@@ -53,6 +56,9 @@ func LoadConfig() (*Config, error) {
 
 		// SQLite路径（用于数据迁移）
 		SQLitePath: filepath.Join(dbDir, "aimodels.db"),
+
+		// 飞书Webhook配置
+		FeishuWebhookURL: getEnv("FEISHU_WEBHOOK_URL", ""),
 	}
 
 	return config, nil
