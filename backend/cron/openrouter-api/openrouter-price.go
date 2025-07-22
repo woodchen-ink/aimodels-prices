@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"aimodels-prices/database"
 	"aimodels-prices/handlers"
@@ -77,6 +78,22 @@ func FetchAndSavePrices() error {
 	processedCount := 0
 	skippedCount := 0
 	for _, modelData := range openRouterResp.Data {
+		// 1. 检查API返回的模型是否有价格字段，如果没有价格则跳过
+		hasPricing := false
+		if (modelData.Endpoint.Pricing.Prompt != "" && modelData.Endpoint.Pricing.Completion != "") ||
+			(modelData.Pricing.Prompt != "" && modelData.Pricing.Completion != "") {
+			hasPricing = true
+		}
+
+		if !hasPricing {
+			log.Printf("跳过无价格模型: %s", modelData.Slug)
+			skippedCount++
+			continue
+		}
+
+		// 2. 检查模型名称是否包含":free"，如果是免费模型则设置价格为0
+		isFreeModel := strings.Contains(modelData.Slug, ":free")
+		
 		// 确定模型类型
 		modelType := determineModelType(modelData.Modality)
 
@@ -84,37 +101,44 @@ func FetchAndSavePrices() error {
 		var inputPrice, outputPrice float64
 		var err error
 
-		// 优先使用endpoint中的pricing
-		if modelData.Endpoint.Pricing.Prompt != "" {
-			inputPrice, err = parsePrice(modelData.Endpoint.Pricing.Prompt)
-			if err != nil {
-				log.Printf("解析endpoint输入价格失败 %s: %v", modelData.Slug, err)
-				skippedCount++
-				continue
+		if isFreeModel {
+			// 免费模型价格设置为0
+			inputPrice = 0
+			outputPrice = 0
+			log.Printf("处理免费模型，价格设为0: %s", modelData.Slug)
+		} else {
+			// 优先使用endpoint中的pricing
+			if modelData.Endpoint.Pricing.Prompt != "" {
+				inputPrice, err = parsePrice(modelData.Endpoint.Pricing.Prompt)
+				if err != nil {
+					log.Printf("解析endpoint输入价格失败 %s: %v", modelData.Slug, err)
+					skippedCount++
+					continue
+				}
+			} else if modelData.Pricing.Prompt != "" {
+				// 如果endpoint中没有，则使用顶层pricing
+				inputPrice, err = parsePrice(modelData.Pricing.Prompt)
+				if err != nil {
+					log.Printf("解析输入价格失败 %s: %v", modelData.Slug, err)
+					skippedCount++
+					continue
+				}
 			}
-		} else if modelData.Pricing.Prompt != "" {
-			// 如果endpoint中没有，则使用顶层pricing
-			inputPrice, err = parsePrice(modelData.Pricing.Prompt)
-			if err != nil {
-				log.Printf("解析输入价格失败 %s: %v", modelData.Slug, err)
-				skippedCount++
-				continue
-			}
-		}
 
-		if modelData.Endpoint.Pricing.Completion != "" {
-			outputPrice, err = parsePrice(modelData.Endpoint.Pricing.Completion)
-			if err != nil {
-				log.Printf("解析endpoint输出价格失败 %s: %v", modelData.Slug, err)
-				skippedCount++
-				continue
-			}
-		} else if modelData.Pricing.Completion != "" {
-			outputPrice, err = parsePrice(modelData.Pricing.Completion)
-			if err != nil {
-				log.Printf("解析输出价格失败 %s: %v", modelData.Slug, err)
-				skippedCount++
-				continue
+			if modelData.Endpoint.Pricing.Completion != "" {
+				outputPrice, err = parsePrice(modelData.Endpoint.Pricing.Completion)
+				if err != nil {
+					log.Printf("解析endpoint输出价格失败 %s: %v", modelData.Slug, err)
+					skippedCount++
+					continue
+				}
+			} else if modelData.Pricing.Completion != "" {
+				outputPrice, err = parsePrice(modelData.Pricing.Completion)
+				if err != nil {
+					log.Printf("解析输出价格失败 %s: %v", modelData.Slug, err)
+					skippedCount++
+					continue
+				}
 			}
 		}
 

@@ -32,3 +32,4 @@ out/
 logs/
 backend/data/aimodels.db
 data/aimodels.db
+CLAUDE.md

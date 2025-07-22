@@ -20,23 +20,11 @@ var authorToChannelType = map[string]uint{
 	// "openai":    1,
 	// "anthropic": 14,
 	// "google":    25,
-	"x-ai": 1001,
+	//"x-ai": 1001,
 }
 
 // 定义黑名单列表
-var blacklist = []string{
-	"shap-e",
-	"palm-2",
-	"o3-mini-high",
-	"claude-instant",
-	"claude-1",
-	"claude-2",
-	"claude-3-haiku",
-	"claude-3-opus",
-	"claude-3-sonnet",
-	":",
-	"gemma-7b-it",
-}
+var blacklist = []string{}
 
 const (
 	OtherPriceSource = "三方API"

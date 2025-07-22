@@ -27,11 +27,11 @@ func Init() {
 			log.Printf("OpenRouter价格获取任务执行失败: %v", err)
 		}
 
-		time.Sleep(3 * time.Second)
+		// time.Sleep(3 * time.Second)
 
-		if err := openrouter_api.UpdateOtherPrices(); err != nil {
-			log.Printf("其他厂商价格更新任务执行失败: %v", err)
-		}
+		// if err := openrouter_api.UpdateOtherPrices(); err != nil {
+		// 	log.Printf("其他厂商价格更新任务执行失败: %v", err)
+		// }
 
 		time.Sleep(3 * time.Second)
 
@@ -70,11 +70,11 @@ func Init() {
 		}
 
 		// 等待几秒后执行其他厂商价格更新任务
-		time.Sleep(3 * time.Second)
-		log.Println("立即执行其他厂商价格更新任务...")
-		if err := openrouter_api.UpdateOtherPrices(); err != nil {
-			log.Printf("初始其他厂商价格更新任务执行失败: %v", err)
-		}
+		// time.Sleep(3 * time.Second)
+		// log.Println("立即执行其他厂商价格更新任务...")
+		// if err := openrouter_api.UpdateOtherPrices(); err != nil {
+		// 	log.Printf("初始其他厂商价格更新任务执行失败: %v", err)
+		// }
 
 		// 等待几秒后执行SiliconFlow价格更新任务
 		time.Sleep(3 * time.Second)
