@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <VoteBanner />
     <el-card class="intro-card">
       <template #header>
         <div class="card-header">
@@ -230,6 +231,7 @@ h4 {
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import VoteBanner from '@/components/VoteBanner.vue'
 
 const origin = ref('')
 

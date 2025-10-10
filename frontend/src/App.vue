@@ -39,7 +39,7 @@
 
     <el-footer height="60px">
       <div class="footer-content">
-        <p>© 2025 SUNAI | <a href="https://www.sunai.net/t/topic/277" target="_blank">介绍帖子</a></p>
+        <p>© 2025 SUNAI | <a href="https://www.sunai.net/t/topic/277" target="_blank">介绍帖子</a> | <a href="https://github.com/woodchen-ink/aimodels-prices" target="_blank">GitHub</a></p>
       </div>
     </el-footer>
   </el-container>

@@ -1,5 +1,6 @@
 <template>
   <div class="prices">
+    <VoteBanner />
     <el-card v-loading="loading" element-loading-text="加载中...">
       <template #header>
         <div class="card-header">
@@ -604,6 +605,7 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { Edit, Delete, Check, Close, Document, Search, ArrowDown, User, Timer, InfoFilled } from '@element-plus/icons-vue'
+import VoteBanner from '@/components/VoteBanner.vue'
 
 const props = defineProps({
   user: Object

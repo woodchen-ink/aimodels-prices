@@ -321,7 +321,6 @@ func cachePricePage(page, pageSize int, channelType, modelType string) {
 
 	// 存入缓存，有效期5分钟
 	GlobalCache.Set(cacheKey, result, 5*time.Minute)
-	log.Printf("已缓存价格查询: %s", cacheKey)
 }
 
 // migrateModels 自动迁移模型到数据库表
