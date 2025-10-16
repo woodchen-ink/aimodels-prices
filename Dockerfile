@@ -5,11 +5,9 @@ WORKDIR /app
 
 # 安装必要的包
 RUN apk add --no-cache \
-    nginx \
     ca-certificates \
     tzdata \
-    bash \
-    wget
+    bash
 
 # 创建必要的目录
 RUN mkdir -p /app/data /app/frontend
@@ -24,12 +22,15 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then \
     rm main-* && \
     chmod +x main
 
+# 复制前端静态文件
 COPY frontend/dist /app/frontend
-COPY backend/config/nginx.conf /etc/nginx/nginx.conf
+
+# 复制启动脚本
 COPY scripts/start.sh ./
 RUN chmod +x start.sh
 
-EXPOSE 80
+# 暴露端口 (默认 8080)
+EXPOSE 8080
 
 # 启动服务
 CMD ["./start.sh"] 

@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 
@@ -113,8 +116,45 @@ func main() {
 		}
 	}
 
+	// 静态文件服务 - 支持 SPA
+	staticDir := "./frontend"
+	if _, err := os.Stat(staticDir); err == nil {
+		// 处理静态文件请求
+		r.NoRoute(func(c *gin.Context) {
+			// 如果是 API 请求，返回 404
+			if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+				return
+			}
+
+			// 检查文件是否存在
+			path := filepath.Join(staticDir, c.Request.URL.Path)
+			fileInfo, err := os.Stat(path)
+
+			// 如果文件存在且不是目录，直接返回文件
+			if err == nil && !fileInfo.IsDir() {
+				c.File(path)
+				return
+			}
+
+			// 如果文件不存在或是目录，返回 index.html (SPA 支持)
+			indexPath := filepath.Join(staticDir, "index.html")
+			if _, err := os.Stat(indexPath); err == nil {
+				c.File(indexPath)
+				return
+			}
+
+			c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		})
+
+		log.Printf("静态文件服务已启用，目录: %s", staticDir)
+	} else {
+		log.Printf("警告: 静态文件目录不存在 (%s)，仅提供 API 服务", staticDir)
+	}
+
 	// 启动服务器
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
+	log.Printf("服务器启动在端口 %s", cfg.ServerPort)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
