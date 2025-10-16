@@ -72,8 +72,9 @@ func main() {
 			prices.POST("", middleware.AuthRequired(), handlers.CreatePrice)
 			prices.PUT("/:id", middleware.AuthRequired(), handlers.UpdatePrice)
 			prices.DELETE("/:id", middleware.AuthRequired(), handlers.DeletePrice)
-			prices.PUT("/:id/status", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdatePriceStatus)
-			prices.PUT("/approve-all", middleware.AuthRequired(), middleware.AdminRequired(), handlers.ApproveAllPrices)
+			// 审核价格需要t4或admin权限
+			prices.PUT("/:id/status", middleware.AuthRequired(), middleware.RequireModerator(), handlers.UpdatePriceStatus)
+			prices.PUT("/approve-all", middleware.AuthRequired(), middleware.RequireModerator(), handlers.ApproveAllPrices)
 		}
 
 		//one_hub 路由

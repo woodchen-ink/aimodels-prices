@@ -167,6 +167,7 @@ func AuthCallback(c *gin.Context) {
 		Username  string `json:"username"`
 		Avatar    string `json:"avatar"`
 		Name      string `json:"name"`
+		Groups    string `json:"groups"`
 		Upstreams []struct {
 			ID               int                    `json:"id"`
 			UpstreamID       int                    `json:"upstream_id"`
@@ -187,18 +188,16 @@ func AuthCallback(c *gin.Context) {
 	}
 
 	// 添加调试日志
-	fmt.Printf("收到OAuth用户信息: ID=%v, Username=%s, Email=%s\n", userInfo.ID, userInfo.Username, userInfo.Email)
+	fmt.Printf("收到OAuth用户信息: ID=%v, Username=%s, Email=%s, Groups=%s\n",
+		userInfo.ID, userInfo.Username, userInfo.Email, userInfo.Groups)
 
 	// 检查用户是否存在
 	var user models.User
 	result := database.DB.Where("email = ?", userInfo.Email).First(&user)
 
-	role := "user"
-	if userInfo.ID == 1 { // 这里写自己的用户ID
-		role = "admin"
-		fmt.Printf("为用户 %s (ID=%v) 设置管理员角色\n", userInfo.Username, userInfo.ID)
-	} else {
-		fmt.Printf("用户 %s (ID=%v) 不是管理员\n", userInfo.Username, userInfo.ID)
+	groups := userInfo.Groups
+	if groups == "" {
+		groups = "t0"
 	}
 
 	if result.Error != nil {
@@ -206,21 +205,21 @@ func AuthCallback(c *gin.Context) {
 		user = models.User{
 			Username: userInfo.Username,
 			Email:    userInfo.Email,
-			Role:     role,
+			Groups:   groups,
 		}
 		if err := database.DB.Create(&user).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 			return
 		}
+		fmt.Printf("创建新用户: %s, Groups=%s\n", userInfo.Username, groups)
 	} else {
-		// 更新现有用户的角色（如果需要）
-		if user.Role != role {
-			user.Role = role
-			if err := database.DB.Save(&user).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
-				return
-			}
+		// 每次登录都更新用户的权限组
+		user.Groups = groups
+		if err := database.DB.Save(&user).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+			return
 		}
+		fmt.Printf("更新用户权限: %s, Groups=%s\n", userInfo.Username, groups)
 	}
 
 	// 创建会话
