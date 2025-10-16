@@ -65,6 +65,7 @@ import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { isAdmin as checkIsAdmin } from '@/utils/permission'
 
 const props = defineProps({
   user: Object
@@ -80,7 +81,7 @@ const form = ref({
 })
 const router = useRouter()
 
-const isAdmin = computed(() => props.user?.role === 'admin')
+const isAdmin = computed(() => checkIsAdmin(props.user))
 
 // 添加加载状态变量
 const loading = ref(true)

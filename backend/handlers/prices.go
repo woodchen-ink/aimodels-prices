@@ -11,6 +11,7 @@ import (
 
 	"aimodels-prices/database"
 	"aimodels-prices/handlers/one_hub"
+	"aimodels-prices/middleware"
 	"aimodels-prices/models"
 )
 
@@ -364,8 +365,9 @@ func CreatePrice(c *gin.Context) {
 	}
 	currentUser := user.(*models.User)
 
-	// 处理价格创建
-	result, changed, err := ProcessPrice(price, nil, currentUser.Role == "admin", currentUser.Username)
+	// 处理价格创建 - t4或admin用户创建的价格自动审核通过
+	isModerator := middleware.IsModerator(currentUser)
+	result, changed, err := ProcessPrice(price, nil, isModerator, currentUser.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create price"})
 		return
@@ -600,8 +602,9 @@ func UpdatePrice(c *gin.Context) {
 		return
 	}
 
-	// 处理价格更新
-	result, changed, err := ProcessPrice(price, &existingPrice, currentUser.Role == "admin", currentUser.Username)
+	// 处理价格更新 - t4或admin用户更新的价格自动审核通过
+	isModerator := middleware.IsModerator(currentUser)
+	result, changed, err := ProcessPrice(price, &existingPrice, isModerator, currentUser.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update price"})
 		return

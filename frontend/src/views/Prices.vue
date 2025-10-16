@@ -606,6 +606,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { Edit, Delete, Check, Close, Document, Search, ArrowDown, User, Timer, InfoFilled } from '@element-plus/icons-vue'
 import VoteBanner from '@/components/VoteBanner.vue'
+import { isModerator } from '@/utils/permission'
 
 const props = defineProps({
   user: Object
@@ -640,7 +641,8 @@ const selectedModelType = ref('')
 const selectedStatus = ref('')
 const searchQuery = ref('')
 
-const isAdmin = computed(() => props.user?.role === 'admin')
+// 使用新的权限判定：t4或admin可以审核价格
+const isAdmin = computed(() => isModerator(props.user))
 
 const providers = ref([])
 const getProvider = (id) => {

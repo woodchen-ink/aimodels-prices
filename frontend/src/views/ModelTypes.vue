@@ -56,6 +56,7 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { isAdmin as checkIsAdmin } from '@/utils/permission'
 
 const props = defineProps({
   user: Object
@@ -72,7 +73,7 @@ const form = ref({
 const loading = ref(true)
 const tableLoading = ref(false)
 
-const isAdmin = computed(() => props.user?.role === 'admin')
+const isAdmin = computed(() => checkIsAdmin(props.user))
 
 // 获取所有模型类别
 const fetchModelTypes = async () => {

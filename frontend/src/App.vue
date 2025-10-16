@@ -20,7 +20,9 @@
             <span class="user-info">
               <el-icon><User /></el-icon>
               {{ globalUser.username }}
-              <el-tag v-if="globalUser.role === 'admin'" size="small" type="success">管理员</el-tag>
+              <el-tag v-if="userPermissionLabel" size="small" :type="getPermissionTagType()">
+                {{ userPermissionLabel }}
+              </el-tag>
             </span>
             <el-button @click="handleLogout">退出</el-button>
           </template>
@@ -46,11 +48,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, provide } from 'vue'
+import { ref, computed, onMounted, provide } from 'vue'
 import { User } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getPermissionLabel, isAdmin, isModerator } from '@/utils/permission'
 
 const router = useRouter()
 const route = useRoute()
@@ -62,6 +65,26 @@ const updateGlobalUser = (user) => {
 }
 
 provide('updateGlobalUser', updateGlobalUser)
+
+// 计算用户权限标签
+const userPermissionLabel = computed(() => {
+  return globalUser.value ? getPermissionLabel(globalUser.value) : ''
+})
+
+// 根据权限返回不同的标签类型
+const getPermissionTagType = () => {
+  if (!globalUser.value) return ''
+
+  if (isAdmin(globalUser.value)) {
+    return 'danger' // 管理员用红色
+  }
+
+  if (isModerator(globalUser.value)) {
+    return 'success' // 审核员用绿色
+  }
+
+  return 'info' // 普通用户用灰色
+}
 
 const handleLogin = async () => {
   loading.value = true
