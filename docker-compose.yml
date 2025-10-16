@@ -1,7 +1,7 @@
 services:
   aimodels-prices:
     container_name: aimodels-prices
-    image: woodchen/aimodels-prices:latest
+    image: ghcr.io/woodchen-ink/aimodels-prices:latest
     restart: always
     environment:
       - GIN_MODE=release
