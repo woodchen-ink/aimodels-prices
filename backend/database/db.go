@@ -192,9 +192,6 @@ func startCacheJobs() {
 func cacheCommonData() {
 	log.Println("开始自动缓存常用数据...")
 
-	// 缓存所有模型类型
-	cacheModelTypes()
-
 	// 缓存所有提供商
 	cacheProviders()
 
@@ -202,18 +199,6 @@ func cacheCommonData() {
 	cachePriceRates()
 
 	log.Println("自动缓存常用数据完成")
-}
-
-// cacheModelTypes 缓存所有模型类型
-func cacheModelTypes() {
-	var types []models.ModelType
-	if err := DB.Order("sort_order ASC, type_key ASC").Find(&types).Error; err != nil {
-		log.Printf("缓存模型类型失败: %v", err)
-		return
-	}
-
-	GlobalCache.Set("model_types", types, 30*time.Minute)
-	log.Printf("已缓存 %d 个模型类型", len(types))
 }
 
 // cacheProviders 缓存所有提供商
@@ -253,14 +238,7 @@ func cachePriceRates() {
 // cachePriceQueries 缓存常用的价格查询
 func cachePriceQueries() {
 	// 缓存第一页数据（无筛选条件）
-	cachePricePage(1, 20, "", "")
-
-	// 获取所有模型类型
-	var modelTypes []models.ModelType
-	if err := DB.Find(&modelTypes).Error; err != nil {
-		log.Printf("获取模型类型失败: %v", err)
-		return
-	}
+	cachePricePage(1, 20, "")
 
 	// 获取所有提供商
 	var providers []models.Provider
@@ -269,20 +247,15 @@ func cachePriceQueries() {
 		return
 	}
 
-	// 为每种模型类型缓存第一页数据
-	for _, mt := range modelTypes {
-		cachePricePage(1, 20, "", mt.TypeKey)
-	}
-
 	// 为每个提供商缓存第一页数据
 	for _, p := range providers {
 		channelType := fmt.Sprintf("%d", p.ID)
-		cachePricePage(1, 20, channelType, "")
+		cachePricePage(1, 20, channelType)
 	}
 }
 
 // cachePricePage 缓存特定页的价格数据
-func cachePricePage(page, pageSize int, channelType, modelType string) {
+func cachePricePage(page, pageSize int, channelType string) {
 	offset := (page - 1) * pageSize
 
 	// 构建查询
@@ -291,9 +264,6 @@ func cachePricePage(page, pageSize int, channelType, modelType string) {
 	// 添加筛选条件
 	if channelType != "" {
 		query = query.Where("channel_type = ?", channelType)
-	}
-	if modelType != "" {
-		query = query.Where("model_type = ?", modelType)
 	}
 
 	// 获取总数
@@ -316,8 +286,8 @@ func cachePricePage(page, pageSize int, channelType, modelType string) {
 	}
 
 	// 构建缓存键
-	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s",
-		page, pageSize, channelType, modelType)
+	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s",
+		page, pageSize, channelType)
 
 	// 存入缓存，有效期5分钟
 	GlobalCache.Set(cacheKey, result, 5*time.Minute)
@@ -327,7 +297,6 @@ func cachePricePage(page, pageSize int, channelType, modelType string) {
 func migrateModels() error {
 	// 自动迁移模型
 	if err := DB.AutoMigrate(
-		&models.ModelType{},
 		&models.Price{},
 		&models.Provider{},
 		&models.User{},

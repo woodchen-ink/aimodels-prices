@@ -105,15 +105,6 @@ func main() {
 			auth.GET("/user", handlers.GetUser)
 			auth.GET("/callback", handlers.AuthCallback)
 		}
-
-		// 模型类型相关路由
-		modelTypes := api.Group("/model-types")
-		{
-			modelTypes.GET("", handlers.GetModelTypes)
-			modelTypes.POST("", middleware.AuthRequired(), middleware.AdminRequired(), handlers.CreateModelType)
-			modelTypes.PUT("/:key", middleware.AuthRequired(), middleware.AdminRequired(), handlers.UpdateModelType)
-			modelTypes.DELETE("/:key", middleware.AuthRequired(), middleware.AdminRequired(), handlers.DeleteModelType)
-		}
 	}
 
 	// 静态文件服务 - 支持 SPA

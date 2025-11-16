@@ -20,7 +20,6 @@ func GetPrices(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
 	channelType := c.Query("channel_type") // 厂商筛选参数
-	modelType := c.Query("model_type")     // 模型类型筛选参数
 	searchQuery := c.Query("search")       // 搜索查询参数
 	status := c.Query("status")            // 状态筛选参数
 
@@ -34,8 +33,8 @@ func GetPrices(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 构建缓存键
-	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_type_%s_search_%s_status_%s",
-		page, pageSize, channelType, modelType, searchQuery, status)
+	cacheKey := fmt.Sprintf("prices_page_%d_size_%d_channel_%s_search_%s_status_%s",
+		page, pageSize, channelType, searchQuery, status)
 
 	// 尝试从缓存获取
 	if cachedData, found := database.GlobalCache.Get(cacheKey); found {
@@ -52,9 +51,6 @@ func GetPrices(c *gin.Context) {
 	if channelType != "" {
 		query = query.Where("channel_type = ?", channelType)
 	}
-	if modelType != "" {
-		query = query.Where("model_type = ?", modelType)
-	}
 	// 添加搜索条件
 	if searchQuery != "" {
 		query = query.Where("model LIKE ?", "%"+searchQuery+"%")
@@ -66,8 +62,8 @@ func GetPrices(c *gin.Context) {
 
 	// 获取总数 - 使用缓存优化
 	var total int64
-	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_type_%s_search_%s_status_%s",
-		channelType, modelType, searchQuery, status)
+	totalCacheKey := fmt.Sprintf("prices_count_channel_%s_search_%s_status_%s",
+		channelType, searchQuery, status)
 
 	if cachedTotal, found := database.GlobalCache.Get(totalCacheKey); found {
 		if t, ok := cachedTotal.(int64); ok {
@@ -131,7 +127,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 		if isAdmin {
 			// 管理员直接更新主字段，检查是否有实际变化
 			if existingPrice.Model == price.Model &&
-				existingPrice.ModelType == price.ModelType &&
 				existingPrice.BillingType == price.BillingType &&
 				existingPrice.ChannelType == price.ChannelType &&
 				existingPrice.Currency == price.Currency &&
@@ -154,7 +149,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 
 			// 有变化，更新字段
 			existingPrice.Model = price.Model
-			existingPrice.ModelType = price.ModelType
 			existingPrice.BillingType = price.BillingType
 			existingPrice.ChannelType = price.ChannelType
 			existingPrice.Currency = price.Currency
@@ -174,7 +168,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			existingPrice.Status = "approved"
 			existingPrice.UpdatedBy = &username
 			existingPrice.TempModel = nil
-			existingPrice.TempModelType = nil
 			existingPrice.TempBillingType = nil
 			existingPrice.TempChannelType = nil
 			existingPrice.TempCurrency = nil
@@ -204,7 +197,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			hasChanges := false
 
 			if existingPrice.Model != price.Model ||
-				existingPrice.ModelType != price.ModelType ||
 				existingPrice.BillingType != price.BillingType ||
 				existingPrice.ChannelType != price.ChannelType ||
 				existingPrice.Currency != price.Currency ||
@@ -228,7 +220,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 			if hasChanges && existingPrice.TempModel != nil {
 				// 检查是否与已有的临时字段相同
 				if *existingPrice.TempModel == price.Model &&
-					(existingPrice.TempModelType == nil || *existingPrice.TempModelType == price.ModelType) &&
 					(existingPrice.TempBillingType == nil || *existingPrice.TempBillingType == price.BillingType) &&
 					(existingPrice.TempChannelType == nil || *existingPrice.TempChannelType == price.ChannelType) &&
 					(existingPrice.TempCurrency == nil || *existingPrice.TempCurrency == price.Currency) &&
@@ -257,7 +248,6 @@ func ProcessPrice(price models.Price, existingPrice *models.Price, isAdmin bool,
 
 			// 有变化，更新临时字段
 			existingPrice.TempModel = &price.Model
-			existingPrice.TempModelType = &price.ModelType
 			existingPrice.TempBillingType = &price.BillingType
 			existingPrice.TempChannelType = &price.ChannelType
 			existingPrice.TempCurrency = &price.Currency
@@ -413,9 +403,6 @@ func UpdatePriceStatus(c *gin.Context) {
 		if price.TempModel != nil {
 			updateMap["model"] = *price.TempModel
 		}
-		if price.TempModelType != nil {
-			updateMap["model_type"] = *price.TempModelType
-		}
 		if price.TempBillingType != nil {
 			updateMap["billing_type"] = *price.TempBillingType
 		}
@@ -467,7 +454,6 @@ func UpdatePriceStatus(c *gin.Context) {
 
 		// 清除所有临时字段
 		updateMap["temp_model"] = nil
-		updateMap["temp_model_type"] = nil
 		updateMap["temp_billing_type"] = nil
 		updateMap["temp_channel_type"] = nil
 		updateMap["temp_currency"] = nil
@@ -505,11 +491,10 @@ func UpdatePriceStatus(c *gin.Context) {
 		} else {
 			// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
 			if err := tx.Model(&price).Updates(map[string]interface{}{
-				"status":                   "approved", // 恢复为已批准状态
-				"updated_at":               time.Now(),
-				"temp_model":               nil,
-				"temp_model_type":          nil,
-				"temp_billing_type":        nil,
+				"status":           "approved", // 恢复为已批准状态
+				"updated_at":       time.Now(),
+				"temp_model":       nil,
+				"temp_billing_type": nil,
 				"temp_channel_type":        nil,
 				"temp_currency":            nil,
 				"temp_input_price":         nil,
@@ -675,9 +660,6 @@ func ApproveAllPrices(c *gin.Context) {
 			if price.TempModel != nil {
 				updateMap["model"] = *price.TempModel
 			}
-			if price.TempModelType != nil {
-				updateMap["model_type"] = *price.TempModelType
-			}
 			if price.TempBillingType != nil {
 				updateMap["billing_type"] = *price.TempBillingType
 			}
@@ -729,7 +711,6 @@ func ApproveAllPrices(c *gin.Context) {
 
 			// 清除所有临时字段
 			updateMap["temp_model"] = nil
-			updateMap["temp_model_type"] = nil
 			updateMap["temp_billing_type"] = nil
 			updateMap["temp_channel_type"] = nil
 			updateMap["temp_currency"] = nil
@@ -769,11 +750,10 @@ func ApproveAllPrices(c *gin.Context) {
 			} else {
 				// 如果是更新的价格，恢复到原始状态（清除临时字段并设置状态为approved）
 				if err := tx.Model(&price).Updates(map[string]interface{}{
-					"status":                   "approved", // 恢复为已批准状态
-					"updated_at":               time.Now(),
-					"temp_model":               nil,
-					"temp_model_type":          nil,
-					"temp_billing_type":        nil,
+					"status":           "approved", // 恢复为已批准状态
+					"updated_at":       time.Now(),
+					"temp_model":       nil,
+					"temp_billing_type": nil,
 					"temp_channel_type":        nil,
 					"temp_currency":            nil,
 					"temp_input_price":         nil,

@@ -7,12 +7,11 @@ import (
 )
 
 type Price struct {
-	ID                uint           `json:"id" gorm:"primaryKey"`
-	Model             string         `json:"model" gorm:"not null;index:idx_model_channel"`
-	ModelType         string         `json:"model_type" gorm:"not null;index:idx_model_type"` // text2text, text2image, etc.
-	BillingType       string         `json:"billing_type" gorm:"not null"`                    // tokens or times
-	ChannelType       uint           `json:"channel_type" gorm:"not null;index:idx_model_channel"`
-	Currency          string         `json:"currency" gorm:"not null"` // USD or CNY
+	ID          uint   `json:"id" gorm:"primaryKey"`
+	Model       string `json:"model" gorm:"not null;index:idx_model_channel"`
+	BillingType string `json:"billing_type" gorm:"not null"` // tokens or times
+	ChannelType uint   `json:"channel_type" gorm:"not null;index:idx_model_channel"`
+	Currency    string `json:"currency" gorm:"not null"` // USD or CNY
 	InputPrice        float64        `json:"input_price" gorm:"not null"`
 	OutputPrice       float64        `json:"output_price" gorm:"not null"`
 	InputAudioTokens  *float64       `json:"input_audio_tokens,omitempty"`  // 音频输入价格
@@ -32,9 +31,8 @@ type Price struct {
 	CreatedBy         string         `json:"created_by" gorm:"not null"`
 	DeletedAt         gorm.DeletedAt `json:"-" gorm:"index"`
 	// 临时字段，用于存储待审核的更新
-	TempModel             *string  `json:"temp_model,omitempty" gorm:"column:temp_model"`
-	TempModelType         *string  `json:"temp_model_type,omitempty" gorm:"column:temp_model_type"`
-	TempBillingType       *string  `json:"temp_billing_type,omitempty" gorm:"column:temp_billing_type"`
+	TempModel       *string `json:"temp_model,omitempty" gorm:"column:temp_model"`
+	TempBillingType *string `json:"temp_billing_type,omitempty" gorm:"column:temp_billing_type"`
 	TempChannelType       *uint    `json:"temp_channel_type,omitempty" gorm:"column:temp_channel_type"`
 	TempCurrency          *string  `json:"temp_currency,omitempty" gorm:"column:temp_currency"`
 	TempInputPrice        *float64 `json:"temp_input_price,omitempty" gorm:"column:temp_input_price"`

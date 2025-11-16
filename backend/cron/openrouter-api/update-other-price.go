@@ -119,9 +119,6 @@ func UpdateOtherPrices() error {
 		// 标记此模型为已处理
 		processedModels[uniqueModelKey] = true
 
-		// 确定模型类型
-		modelType := determineModelType(modelData.Modality)
-
 		// 解析价格
 		var inputPrice, outputPrice float64
 		var parseErr error
@@ -155,7 +152,6 @@ func UpdateOtherPrices() error {
 		// 创建价格对象
 		price := models.Price{
 			Model:       modelName,
-			ModelType:   modelType,
 			BillingType: BillingType,
 			ChannelType: channelType,
 			Currency:    Currency,

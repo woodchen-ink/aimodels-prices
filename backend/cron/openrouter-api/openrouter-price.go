@@ -93,9 +93,6 @@ func FetchAndSavePrices() error {
 
 		// 2. 检查模型名称是否包含":free"，如果是免费模型则设置价格为0
 		isFreeModel := strings.Contains(modelData.Slug, ":free")
-		
-		// 确定模型类型
-		modelType := determineModelType(modelData.Modality)
 
 		// 使用endpoint中的pricing
 		var inputPrice, outputPrice float64
@@ -145,7 +142,6 @@ func FetchAndSavePrices() error {
 		// 创建价格对象
 		price := models.Price{
 			Model:       modelData.Slug,
-			ModelType:   modelType,
 			BillingType: BillingType,
 			ChannelType: ChannelType,
 			Currency:    Currency,
@@ -197,18 +193,6 @@ func FetchAndSavePrices() error {
 
 	log.Printf("OpenRouter价格数据处理完成，成功处理: %d, 跳过: %d", processedCount, skippedCount)
 	return nil
-}
-
-// determineModelType 根据modality确定模型类型
-func determineModelType(modality string) string {
-	switch modality {
-	case "text->text":
-		return "text2text"
-	case "text+image->text":
-		return "multimodal"
-	default:
-		return "other"
-	}
 }
 
 // parsePrice 解析价格字符串为浮点数并乘以1000000

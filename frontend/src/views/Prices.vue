@@ -1,6 +1,5 @@
 <template>
   <div class="prices">
-    <VoteBanner />
     <el-card v-loading="loading" element-loading-text="加载中...">
       <template #header>
         <div class="card-header">
@@ -53,17 +52,6 @@
         </div>
       </div>
 
-      <div class="filter-section">
-        <div class="filter-label" style="min-width:80px;">模型类别:</div>
-        <div class="model-type-filters">
-          <el-button :type="!selectedModelType ? 'primary' : ''" @click="selectedModelType = ''">全部</el-button>
-          <el-button v-for="(label, key) in modelTypeMap" :key="key" :type="selectedModelType === key ? 'primary' : ''"
-            @click="selectedModelType = key">
-            {{ label }}
-          </el-button>
-        </div>
-      </div>
-
       <!-- 添加状态筛选 -->
       <div class="filter-section">
         <div class="filter-label" style="min-width:80px;">状态筛选:</div>
@@ -112,7 +100,6 @@
                 </el-tag>
               </h3>
               <div class="model-meta">
-                <el-tag size="small" effect="plain">{{ getModelType(price.model_type) }}</el-tag>
                 <el-tag size="small" effect="plain">{{ getBillingType(price.billing_type) }}</el-tag>
                 <el-tag size="small" effect="plain">{{ price.currency }}</el-tag>
               </div>
@@ -335,14 +322,6 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
               <el-input v-model="row.model" placeholder="请输入模型名称" />
             </template>
           </el-table-column>
-          <el-table-column label="模型类型" width="120">
-            <template #default="{ row }">
-              <el-select v-model="row.model_type" placeholder="请选择或输入" allow-create filterable
-                @create="handleModelTypeCreate">
-                <el-option v-for="(label, value) in modelTypeMap" :key="value" :label="label" :value="value" />
-              </el-select>
-            </template>
-          </el-table-column>
           <el-table-column label="计费类型" width="120">
             <template #default="{ row }">
               <el-select v-model="row.billing_type" placeholder="请选择">
@@ -489,14 +468,6 @@ dall-e-3 按Token收费 OpenAI 美元 40.000000 40.000000" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="模型类型">
-              <el-select v-model="form.model_type" placeholder="请选择或输入" allow-create filterable
-                @create="handleModelTypeCreate">
-                <el-option v-for="(label, value) in modelTypeMap" :key="value" :label="label" :value="value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="计费类型">
               <el-select v-model="form.billing_type" placeholder="请选择">
                 <el-option label="按量计费" value="tokens" />
@@ -605,7 +576,6 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { Edit, Delete, Check, Close, Document, Search, ArrowDown, User, Timer, InfoFilled } from '@element-plus/icons-vue'
-import VoteBanner from '@/components/VoteBanner.vue'
 import { isModerator } from '@/utils/permission'
 
 const props = defineProps({
@@ -616,7 +586,6 @@ const prices = ref([])
 const dialogVisible = ref(false)
 const form = ref({
   model: '',
-  model_type: '',
   billing_type: 'tokens',
   channel_type: '',
   currency: 'USD',
@@ -637,7 +606,6 @@ const form = ref({
 })
 const router = useRouter()
 const selectedProvider = ref('')
-const selectedModelType = ref('')
 const selectedStatus = ref('')
 const searchQuery = ref('')
 
@@ -701,12 +669,6 @@ const copyModelName = (modelName) => {
     })
 }
 
-// 添加getModelType函数
-const getModelType = (type) => {
-  if (!type) return ''
-  return modelTypeMap.value[type] || type
-}
-
 const calculateRate = (price, currency) => {
   if (!price) return 0
   return currency === 'USD' ? (price / 2).toFixed(4) : (price / 14).toFixed(4)
@@ -738,9 +700,6 @@ const loadPrices = async () => {
   if (selectedProvider.value) {
     params.channel_type = selectedProvider.value
   }
-  if (selectedModelType.value) {
-    params.model_type = selectedModelType.value
-  }
   // 添加状态筛选参数
   if (selectedStatus.value) {
     params.status = selectedStatus.value
@@ -761,7 +720,7 @@ const loadPrices = async () => {
     providers.value = providersRes.data
 
     // 缓存数据
-    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedModelType.value}-${selectedStatus.value}-${searchQuery.value}`
+    const cacheKey = `${currentPage.value}-${pageSize.value}-${selectedProvider.value}-${selectedStatus.value}-${searchQuery.value}`
     cachedPrices.value.set(cacheKey, {
       prices: pricesRes.data.data,
       total: pricesRes.data.total
@@ -822,7 +781,6 @@ const handleAdd = () => {
   editingPrice.value = null
   form.value = {
     model: '',
-    model_type: '',
     billing_type: 'tokens',
     channel_type: '',
     currency: 'USD',
@@ -855,7 +813,6 @@ const handleQuickEdit = (row) => {
   // 复制现有数据作为修改建议的基础
   form.value = {
     model: row.model,
-    model_type: row.model_type,
     billing_type: row.billing_type,
     channel_type: row.channel_type,
     currency: row.currency,
@@ -941,7 +898,6 @@ const handleSubmitResponse = async (response) => {
   editingPrice.value = null
   form.value = {
     model: '',
-    model_type: '',
     billing_type: 'tokens',
     channel_type: '',
     currency: 'USD',
@@ -988,57 +944,9 @@ const batchForms = ref([])
 const selectedRows = ref([])
 const batchSubmitting = ref(false)
 
-// 添加模型类型映射
-const modelTypeMap = ref({})
-
-// 加载模型类型
-const loadModelTypes = async () => {
-  try {
-    const response = await axios.get('/api/model-types')
-    const types = response.data
-    const map = {}
-    types.forEach(type => {
-      map[type.key] = type.label
-    })
-    modelTypeMap.value = map
-  } catch (error) {
-    console.error('Failed to load model types:', error)
-    ElMessage.error('加载模型类型失败')
-  }
-}
-
-// 处理新增的模型类型
-const handleModelTypeCreate = async (value) => {
-  // 如果输入的是中文描述，尝试查找对应的key
-  const existingKey = Object.entries(modelTypeMap.value).find(([_, label]) => label === value)?.[0]
-  if (existingKey) {
-    return existingKey
-  }
-
-  // 如果输入的是英文key，直接使用
-  let type_key = value
-  let type_label = value
-  if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-    // 如果是中文描述，生成一个新的key
-    type_key = `type_${Date.now()}`
-    type_label = value
-  }
-
-  try {
-    await axios.post('/api/model-types', { type_key, type_label })
-    modelTypeMap.value[type_key] = type_label
-    return type_key
-  } catch (error) {
-    console.error('Failed to create model type:', error)
-    ElMessage.error('创建模型类型失败')
-    return 'other'
-  }
-}
-
 // 创建新行的默认数据
 const createNewRow = () => ({
   model: '',
-  model_type: '',
   billing_type: 'tokens',
   channel_type: '',
   currency: 'USD',
@@ -1298,12 +1206,6 @@ watch(selectedProvider, () => {
   loadPrices()
 })
 
-// 监听模型类型选择变化
-watch(selectedModelType, () => {
-  currentPage.value = 1 // 重置到第一页
-  loadPrices()
-})
-
 // 监听状态选择变化
 watch(selectedStatus, () => {
   currentPage.value = 1 // 重置到第一页
@@ -1482,7 +1384,6 @@ const setExtensionPricesFromPrice = (price) => {
 }
 
 onMounted(() => {
-  loadModelTypes()
   loadPrices()
 })
 </script>
@@ -1519,13 +1420,6 @@ onMounted(() => {
 }
 
 .status-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.model-type-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

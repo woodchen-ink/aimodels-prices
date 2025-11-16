@@ -111,36 +111,27 @@ func UpdateSiliconFlowPrices() error {
 			continue
 		}
 
-		// 确定模型类型和价格
-		var modelType string
+		// 确定计费类型和价格
 		var billingType string
 		var inputPrice, outputPrice float64
 
-		// 根据模型类型和价格单位确定模型类型和价格计算方式
+		// 根据价格单位确定计费类型和价格计算方式
 		switch {
 		case isTokenBasedUnit(model.PriceUnit):
 			// 基于Token的模型（如文本模型）
-			modelType = determineModelTypeBySubType(model.Type, model.SubType)
 			billingType = BillingTypeTokens // 使用tokens计费类型
 			// 直接使用价格，系统已经按每百万token为单位
 			inputPrice = roundPrice(modelPrice)
 			outputPrice = inputPrice // 使用相同价格
 		case isTimeBasedUnit(model.PriceUnit, model.Type):
 			// 基于次数的模型（如图像、视频）
-			modelType = determineModelTypeBySubType(model.Type, model.SubType)
 			billingType = BillingTypeTimes // 使用times计费类型
 			// 直接使用价格
 			inputPrice = roundPrice(modelPrice)
 			outputPrice = inputPrice // 使用相同价格
 		default:
 			// 默认按token计费
-			modelType = determineModelTypeBySubType(model.Type, model.SubType)
-			// 根据模型类型决定计费方式
-			if modelType == "text2image" || modelType == "text2video" || modelType == "image2video" {
-				billingType = BillingTypeTimes // 图像和视频相关模型使用times
-			} else {
-				billingType = BillingTypeTokens // 其他默认使用tokens
-			}
+			billingType = BillingTypeTokens // 默认使用tokens
 			// 对于未知类型，默认按token处理
 			inputPrice = roundPrice(modelPrice)
 			outputPrice = inputPrice // 使用相同价格
@@ -150,7 +141,6 @@ func UpdateSiliconFlowPrices() error {
 		// 创建价格对象
 		price := models.Price{
 			Model:       modelName,
-			ModelType:   modelType,
 			BillingType: billingType, // 使用动态确定的计费类型
 			ChannelType: SiliconFlowChannelType,
 			Currency:    Currency, // 使用人民币
@@ -312,23 +302,3 @@ func isTimeBasedUnit(unit string, modelType string) bool {
 	return false
 }
 
-// determineModelTypeBySubType 根据模型类型和子类型确定我们系统中的模型类型
-func determineModelTypeBySubType(modelType string, subType string) string {
-	switch modelType {
-	case "text":
-		return "text2text"
-	case "image":
-		return "text2image"
-	case "video":
-		if subType == "image-to-video" {
-			return "image2video"
-		}
-		return "text2video"
-	case "audio":
-		return "text2speech"
-	case "embedding":
-		return "embedding"
-	default:
-		return "other"
-	}
-}
