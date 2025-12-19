@@ -181,13 +181,11 @@ li {
 .api-doc {
   padding: 15px;
   background-color: #f8f9fa;
-  border-radius: 4px;
 }
 
 pre {
   background-color: #f1f1f1;
   padding: 15px;
-  border-radius: 4px;
   overflow-x: auto;
 }
 
@@ -203,7 +201,6 @@ h4 {
   margin-bottom: 12px;
   background-color: #f1f1f1;
   padding: 8px 12px;
-  border-radius: 4px;
 }
 
 .method {
@@ -211,7 +208,6 @@ h4 {
   font-weight: bold;
   background-color: #f0f9eb;
   padding: 2px 8px;
-  border-radius: 4px;
   font-size: 14px;
 }
 

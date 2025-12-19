@@ -1512,7 +1512,6 @@ onMounted(() => {
   font-size: 13px;
   background-color: #ecf5ff;
   padding: 8px;
-  border-radius: 4px;
 }
 
 .import-actions {
@@ -1674,7 +1673,6 @@ onMounted(() => {
 
 .price-card {
   background: #fff;
-  border-radius: 8px;
   padding: 0.75rem; /* 减小内边距 */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1); /* 更柔和的阴影 */
   display: flex;
@@ -1730,7 +1728,6 @@ onMounted(() => {
 .provider-icon {
   width: 20px; /* 减小图标大小 */
   height: 20px;
-  border-radius: 4px;
   object-fit: contain;
   background-color: #f5f7fa;
   padding: 2px;
@@ -1744,7 +1741,6 @@ onMounted(() => {
 
 .model-status {
   padding: 0.15rem 0.5rem; /* 减小内边距 */
-  border-radius: 4px; /* 减小圆角 */
   font-size: 0.7rem; /* 减小字体 */
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -1829,7 +1825,6 @@ onMounted(() => {
   padding: 0.5rem;
   margin-top: 0.3rem; /* 减小上边距 */
   background-color: #f5f7fa; /* 更淡的背景色 */
-  border-radius: 4px; /* 减小圆角 */
 }
 
 .price-box {
@@ -1928,7 +1923,6 @@ onMounted(() => {
   align-items: center;
   padding: 0.2rem 0.3rem; /* 减小内边距 */
   background: #f5f7fa; /* 使用与价格信息相同的背景色 */
-  border-radius: 3px; /* 减小圆角 */
   border: none; /* 移除边框 */
   transition: all 0.2s ease;
   max-width: fit-content;
@@ -2090,13 +2084,11 @@ onMounted(() => {
   color: #409EFF;
   font-size: 12px;
   padding: 2px 6px;
-  border-radius: 4px;
   white-space: nowrap;
 }
 
 .extended-price-container {
   border: 1px solid #EBEEF5;
-  border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
   background-color: #f9fafc;
@@ -2112,7 +2104,6 @@ onMounted(() => {
 
 .extension-item {
   border: 1px solid #EBEEF5;
-  border-radius: 6px;
   padding: 16px;
   margin-bottom: 16px;
   background-color: #fff;
