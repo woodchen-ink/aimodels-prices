@@ -131,8 +131,8 @@ const handleLogout = async () => {
 }
 
 .el-header {
-  background-color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-card);
+  box-shadow: 0 1px 4px rgba(20, 20, 19, 0.06);
   position: fixed;
   width: 100%;
   z-index: 100;
@@ -141,7 +141,7 @@ const handleLogout = async () => {
 
 .el-main {
   padding-top: 80px;
-  background-color: #f5f7fa;
+  background-color: var(--color-background);
 }
 
 .nav-container {
@@ -163,7 +163,7 @@ const handleLogout = async () => {
 .logo {
   font-size: 20px;
   font-weight: bold;
-  color: #409EFF;
+  color: var(--color-foreground);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -189,12 +189,12 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 
 .el-footer {
-  background-color: #fff;
-  border-top: 1px solid #e4e7ed;
+  background-color: var(--color-bg-card);
+  border-top: 1px solid var(--color-border);
 }
 
 .footer-content {
@@ -205,11 +205,11 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--color-text-tertiary);
 }
 
 .footer-content a {
-  color: #409EFF;
+  color: var(--color-primary);
   text-decoration: none;
 }
 

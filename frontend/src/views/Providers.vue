@@ -8,7 +8,7 @@
         </div>
       </template>
 
-      <el-table :data="sortedProviders" style="width: 100%" v-loading="tableLoading" element-loading-text="加载中..." class="providers-table" :header-cell-style="{ background: '#f5f7fa', color: '#606266' }">
+      <el-table :data="sortedProviders" style="width: 100%" v-loading="tableLoading" element-loading-text="加载中..." class="providers-table" :header-cell-style="{ background: 'var(--color-bg-light)', color: 'var(--color-text-secondary)' }">
         <el-table-column prop="id" label="ID" min-width="200"/>
         <el-table-column label="名称" min-width="200">
           <template #default="{ row }">
@@ -228,10 +228,10 @@ const submitForm = async () => {
 
 :deep(.el-loading-spinner) {
   .el-loading-text {
-    color: #409EFF;
+    color: var(--color-primary);
   }
   .path {
-    stroke: #409EFF;
+    stroke: var(--color-primary);
   }
 }
 .providers-container {
@@ -243,12 +243,12 @@ const submitForm = async () => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px 0 rgba(20, 20, 19, 0.06);
 }
 .title {
   font-size: 18px;
   font-weight: bold;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 .providers-table {
   width: 100%;

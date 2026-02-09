@@ -1,0 +1,85 @@
+/* Custom Theme - Based on CLAUDE.md Color System */
+/* 硬朗、纸质质感、性冷淡风 */
+
+:root {
+  /* ===== Core Palette ===== */
+  --color-foreground: #141413;
+  --color-background: #FAF9F5;
+  --color-primary: #D97757;       /* 第二强调色 / primary accent */
+  --color-highlight: #F2D879;
+  --color-destructive: #B85E48;
+  --color-success: #74875A;
+  --color-love: #C46686;
+  --color-selected: #E3DCD1;      /* muted */
+  --color-hover: #EBE6DE;         /* secondary / hover */
+
+  /* ===== Derived Tokens ===== */
+  --color-text-primary: #141413;
+  --color-text-secondary: #5C5C58;
+  --color-text-tertiary: #8A8A86;
+  --color-text-placeholder: #B0B0AC;
+  --color-border: #E3DCD1;
+  --color-border-light: #EBE6DE;
+  --color-bg-light: #F5F2EB;
+  --color-bg-card: #FFFFFF;
+
+  /* ===== Element Plus Theme Overrides ===== */
+  --el-color-primary: #D97757;
+  --el-color-primary-light-3: #E5A08A;
+  --el-color-primary-light-5: #ECBBA8;
+  --el-color-primary-light-7: #F3D5C6;
+  --el-color-primary-light-8: #F7E2D5;
+  --el-color-primary-light-9: #FBF0E9;
+  --el-color-primary-dark-2: #AE5F46;
+
+  --el-color-success: #74875A;
+  --el-color-success-light-3: #9DAD87;
+  --el-color-success-light-5: #BAC3AD;
+  --el-color-success-light-7: #D6D9CF;
+  --el-color-success-light-8: #E2E5DC;
+  --el-color-success-light-9: #EEF0EB;
+  --el-color-success-dark-2: #5D6C48;
+
+  --el-color-warning: #D4A843;
+  --el-color-warning-light-3: #E0C275;
+  --el-color-warning-light-5: #E9D4A1;
+  --el-color-warning-light-7: #F2E5CC;
+  --el-color-warning-light-8: #F6EDDD;
+  --el-color-warning-light-9: #FBF6EE;
+  --el-color-warning-dark-2: #AA8636;
+
+  --el-color-danger: #B85E48;
+  --el-color-danger-light-3: #CD8E7D;
+  --el-color-danger-light-5: #DCAFA4;
+  --el-color-danger-light-7: #EAD0CA;
+  --el-color-danger-light-8: #F0DED9;
+  --el-color-danger-light-9: #F7EDE9;
+  --el-color-danger-dark-2: #934B3A;
+
+  --el-color-info: #8A8A86;
+  --el-color-info-light-3: #ADADAA;
+  --el-color-info-light-5: #C5C5C3;
+  --el-color-info-light-7: #DCDCDB;
+  --el-color-info-light-8: #E6E6E5;
+  --el-color-info-light-9: #F0F0EF;
+  --el-color-info-dark-2: #6E6E6B;
+
+  --el-bg-color: #FAF9F5;
+  --el-bg-color-page: #FAF9F5;
+  --el-bg-color-overlay: #FFFFFF;
+
+  --el-text-color-primary: #141413;
+  --el-text-color-regular: #5C5C58;
+  --el-text-color-secondary: #8A8A86;
+  --el-text-color-placeholder: #B0B0AC;
+
+  --el-border-color: #E3DCD1;
+  --el-border-color-light: #EBE6DE;
+  --el-border-color-lighter: #F5F2EB;
+  --el-border-color-extra-light: #FAF9F5;
+
+  --el-fill-color: #F5F2EB;
+  --el-fill-color-light: #FAF9F5;
+  --el-fill-color-lighter: #FDFCFA;
+  --el-fill-color-blank: #FFFFFF;
+}

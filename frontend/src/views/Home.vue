@@ -155,19 +155,19 @@
 h1 {
   margin: 0;
   font-size: 24px;
-  color: #409EFF;
+  color: var(--color-foreground);
 }
 
 h2 {
   margin-top: 30px;
   margin-bottom: 15px;
   font-size: 20px;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .content {
   line-height: 1.6;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 
 ul {
@@ -180,18 +180,18 @@ li {
 
 .api-doc {
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-light);
 }
 
 pre {
-  background-color: #f1f1f1;
+  background-color: var(--color-hover);
   padding: 15px;
   overflow-x: auto;
 }
 
 h4 {
   margin: 15px 0 10px;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .api-url {
@@ -199,20 +199,20 @@ h4 {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  background-color: #f1f1f1;
+  background-color: var(--color-hover);
   padding: 8px 12px;
 }
 
 .method {
-  color: #67C23A;
+  color: var(--color-success);
   font-weight: bold;
-  background-color: #f0f9eb;
+  background-color: var(--el-color-success-light-9);
   padding: 2px 8px;
   font-size: 14px;
 }
 
 .url {
-  color: #409EFF;
+  color: var(--color-primary);
   cursor: pointer;
   font-family: monospace;
   font-size: 14px;

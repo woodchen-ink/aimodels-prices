@@ -36,7 +36,7 @@ function handleClose() {
 }
 
 .vote-link {
-  color: #409eff;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
 }
