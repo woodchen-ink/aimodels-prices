@@ -178,6 +178,7 @@ jobs:
           PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
         with:
           host: ${{ secrets.SERVER_IP }}
+          port: ${{ secrets.SERVER_PORT }}
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           envs: DOCKER_IMAGE,PROJECT_PATH
