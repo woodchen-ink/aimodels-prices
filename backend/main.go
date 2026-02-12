@@ -16,6 +16,7 @@ import (
 	one_hub_handlers "aimodels-prices/handlers/one_hub"
 	initTasks "aimodels-prices/init"
 	"aimodels-prices/middleware"
+	"aimodels-prices/seo"
 )
 
 func main() {
@@ -129,13 +130,8 @@ func main() {
 			}
 
 			// 如果文件不存在或是目录，返回 index.html (SPA 支持)
-			indexPath := filepath.Join(staticDir, "index.html")
-			if _, err := os.Stat(indexPath); err == nil {
-				c.File(indexPath)
-				return
-			}
-
-			c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+			// 使用 SEO 模块根据路径动态替换 meta 标签
+			seo.RenderIndex(c, staticDir)
 		})
 
 		log.Printf("静态文件服务已启用，目录: %s", staticDir)

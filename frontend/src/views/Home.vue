@@ -233,13 +233,6 @@ onMounted(() => {
   origin.value = window.location.origin
 })
 
-// 添加页面元信息
-const meta = {
-  title: 'AI模型价格 - 首页',
-  description: '专业的AI模型价格管理系统，支持多模型厂商、多币种的价格管理，提供标准的API接口。',
-  keywords: 'AI模型,价格管理,API接口,OpenAI,Azure,Anthropic'
-}
-
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
@@ -249,5 +242,4 @@ const copyToClipboard = async (text) => {
   }
 }
 
-defineExpose({ meta })
 </script> 

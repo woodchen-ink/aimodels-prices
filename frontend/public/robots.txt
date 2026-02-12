@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /prices
+Allow: /providers
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://ai-prices.sunai.net/sitemap.xml
