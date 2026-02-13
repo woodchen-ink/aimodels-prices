@@ -4,7 +4,7 @@
 :root {
   /* ===== Core Palette ===== */
   --color-foreground: #141413;
-  --color-background: #FAF9F5;
+  --color-background: #F8F7F6;
   --color-primary: #D97757;       /* 第二强调色 / primary accent */
   --color-highlight: #F2D879;
   --color-destructive: #B85E48;
@@ -64,8 +64,8 @@
   --el-color-info-light-9: #F0F0EF;
   --el-color-info-dark-2: #6E6E6B;
 
-  --el-bg-color: #FAF9F5;
-  --el-bg-color-page: #FAF9F5;
+  --el-bg-color: #F8F7F6;
+  --el-bg-color-page: #F8F7F6;
   --el-bg-color-overlay: #FFFFFF;
 
   --el-text-color-primary: #141413;
@@ -76,10 +76,10 @@
   --el-border-color: #E3DCD1;
   --el-border-color-light: #EBE6DE;
   --el-border-color-lighter: #F5F2EB;
-  --el-border-color-extra-light: #FAF9F5;
+  --el-border-color-extra-light: #F8F7F6;
 
   --el-fill-color: #F5F2EB;
-  --el-fill-color-light: #FAF9F5;
+  --el-fill-color-light: #F8F7F6;
   --el-fill-color-lighter: #FDFCFA;
   --el-fill-color-blank: #FFFFFF;
 }
