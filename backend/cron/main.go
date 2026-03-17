@@ -9,7 +9,7 @@ import (
 	openai_api "aimodels-prices/cron/openai-api"
 	openrouter_api "aimodels-prices/cron/openrouter-api"
 	price_audit "aimodels-prices/cron/price-audit"
-	siliconflow_api "aimodels-prices/cron/siliconflow-api"
+	// siliconflow_api "aimodels-prices/cron/siliconflow-api"
 )
 
 var cronScheduler *cron.Cron
@@ -34,11 +34,11 @@ func Init() {
 		// 	log.Printf("其他厂商价格更新任务执行失败: %v", err)
 		// }
 
-		time.Sleep(3 * time.Second)
+		// time.Sleep(3 * time.Second)
 
-		if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
-			log.Printf("SiliconFlow价格更新任务执行失败: %v", err)
-		}
+		// if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
+		// 	log.Printf("SiliconFlow价格更新任务执行失败: %v", err)
+		// }
 
 		time.Sleep(3 * time.Second)
 
@@ -84,11 +84,11 @@ func Init() {
 		// }
 
 		// 等待几秒后执行SiliconFlow价格更新任务
-		time.Sleep(3 * time.Second)
-		log.Println("立即执行SiliconFlow价格更新任务...")
-		if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
-			log.Printf("初始SiliconFlow价格更新任务执行失败: %v", err)
-		}
+		// time.Sleep(3 * time.Second)
+		// log.Println("立即执行SiliconFlow价格更新任务...")
+		// if err := siliconflow_api.UpdateSiliconFlowPrices(); err != nil {
+		// 	log.Printf("初始SiliconFlow价格更新任务执行失败: %v", err)
+		// }
 
 		// 等待几秒后执行OpenAI官网价格获取任务
 		time.Sleep(3 * time.Second)

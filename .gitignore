@@ -34,3 +34,4 @@ backend/data/aimodels.db
 data/aimodels.db
 CLAUDE.md
 .claude/
+backend/aimodels-prices.exe
